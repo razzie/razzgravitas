@@ -16,16 +16,20 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include <Windows.h>
-#include <string>
-#include "Application.hpp"
+#pragma once
 
-int CALLBACK WinMain(
-	_In_ HINSTANCE hInstance,
-	_In_ HINSTANCE hPrevInstance,
-	_In_ LPSTR     lpCmdLine,
-	_In_ int       nCmdShow)
+struct AddGameObject
 {
-	std::string cmdline(lpCmdLine);
-	return Application(cmdline).run();
-}
+	float position_x;
+	float position_y;
+	float radius;
+	float velocity_x;
+	float velocity_y;
+};
+
+struct RemoveGameObjects
+{
+	float position_x;
+	float position_y;
+	float radius;
+};

@@ -16,16 +16,26 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include <Windows.h>
-#include <string>
-#include "Application.hpp"
+#pragma once
 
-int CALLBACK WinMain(
-	_In_ HINSTANCE hInstance,
-	_In_ HINSTANCE hPrevInstance,
-	_In_ LPSTR     lpCmdLine,
-	_In_ int       nCmdShow)
+#include <future>
+#include <string>
+#include <raz/thread.hpp>
+#include "GameWindow.hpp"
+#include "GameWorld.hpp"
+
+class Application
 {
-	std::string cmdline(lpCmdLine);
-	return Application(cmdline).run();
-}
+public:
+	Application(const std::string& cmdline);
+	~Application();
+	int run();
+	void exit(int exit_code, const char* msg = nullptr);
+	raz::Thread<GameWindow>& getGameWindow();
+	raz::Thread<GameWorld>& getGameWorld();
+
+private:
+	std::promise<int> m_exit_code;
+	raz::Thread<GameWindow> m_window;
+	raz::Thread<GameWorld> m_world;
+};

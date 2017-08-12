@@ -16,16 +16,32 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include <Windows.h>
-#include <string>
-#include "Application.hpp"
+#pragma once
 
-int CALLBACK WinMain(
-	_In_ HINSTANCE hInstance,
-	_In_ HINSTANCE hPrevInstance,
-	_In_ LPSTR     lpCmdLine,
-	_In_ int       nCmdShow)
+#include <cstdint>
+#include <mutex>
+#include <Box2D/Box2D.h>
+#include <raz/timer.hpp>
+#include "Events.hpp"
+
+class Application;
+class GameWindow;
+
+class GameWorld
 {
-	std::string cmdline(lpCmdLine);
-	return Application(cmdline).run();
-}
+public:
+	GameWorld(Application* app, uint16_t player_id);
+	~GameWorld();
+	void render(GameWindow& window);
+	void operator()(); // loop
+	void operator()(AddGameObject e);
+	void operator()(RemoveGameObjects e);
+
+private:
+	Application* m_app;
+	raz::Timer m_timer;
+	b2World m_world;
+	std::mutex m_lock;
+
+	void setLevelBounds(float width, float height);
+};
