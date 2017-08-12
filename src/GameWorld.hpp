@@ -32,16 +32,16 @@ class GameWorld
 public:
 	GameWorld(Application* app, uint16_t player_id);
 	~GameWorld();
-	void render(GameWindow& window);
+	void render(GameWindow& window) const;
 	void operator()(); // loop
 	void operator()(AddGameObject e);
 	void operator()(RemoveGameObjects e);
 
 private:
+	mutable std::mutex m_lock;
 	Application* m_app;
 	raz::Timer m_timer;
 	b2World m_world;
-	std::mutex m_lock;
 
 	void setLevelBounds(float width, float height);
 };
