@@ -37,11 +37,11 @@ GameWorld::~GameWorld()
 {
 }
 
-void GameWorld::render(GameWindow& window)
+void GameWorld::render(GameWindow& window) const
 {
 	std::lock_guard<std::mutex> guard(m_lock);
 
-	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
+	for (const b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
 	{
 		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
 		if (obj == 0)
@@ -89,6 +89,9 @@ void GameWorld::operator()()
 
 void GameWorld::operator()(AddGameObject e)
 {
+	if (e.position_x < 0.f || e.position_x > RESOLUTION_WIDTH || e.position_y < 0.f || e.position_y > RESOLUTION_HEIGHT)
+		return;
+
 	std::lock_guard<std::mutex> guard(m_lock);
 
 	GameObject* obj = new GameObject();

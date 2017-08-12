@@ -19,7 +19,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #pragma once
 
 #include <cstdint>
-#include <Box2D/Box2D.h>
+
+class b2Body;
 
 struct GameObject
 {
