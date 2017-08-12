@@ -16,16 +16,33 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include <Windows.h>
-#include <string>
-#include "Application.hpp"
+#pragma once
 
-int CALLBACK WinMain(
-	_In_ HINSTANCE hInstance,
-	_In_ HINSTANCE hPrevInstance,
-	_In_ LPSTR     lpCmdLine,
-	_In_ int       nCmdShow)
+#include <cstdint>
+#include <SFML/Graphics.hpp>
+#include <raz/color.hpp>
+
+class Application;
+class GameWorld;
+
+class GameWindow
 {
-	std::string cmdline(lpCmdLine);
-	return Application(cmdline).run();
-}
+public:
+	GameWindow(Application* app, uint16_t player_id);
+	~GameWindow();
+	void drawGameObject(float x, float y, float r, raz::Color color);
+	void operator()(); // loop
+	void operator()(GameWorld* world);
+
+private:
+	Application* m_app;
+	sf::RenderWindow m_window;
+	sf::View m_view;
+	sf::CircleShape m_game_object_shape;
+	sf::CircleShape m_mouse_shape;
+	sf::RectangleShape m_clear_rect;
+	float m_mouse_radius;
+	int m_mouse_drag_x;
+	int m_mouse_drag_y;
+	bool m_mouse_down;
+};

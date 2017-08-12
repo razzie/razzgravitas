@@ -16,16 +16,15 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include <Windows.h>
-#include <string>
-#include "Application.hpp"
+#pragma once
 
-int CALLBACK WinMain(
-	_In_ HINSTANCE hInstance,
-	_In_ HINSTANCE hPrevInstance,
-	_In_ LPSTR     lpCmdLine,
-	_In_ int       nCmdShow)
+#include <cstdint>
+#include <Box2D/Box2D.h>
+
+struct GameObject
 {
-	std::string cmdline(lpCmdLine);
-	return Application(cmdline).run();
-}
+	uint16_t player_id;
+	uint16_t object_id;
+	float radius;
+	b2Body* body;
+};

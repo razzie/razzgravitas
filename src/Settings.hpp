@@ -16,16 +16,10 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include <Windows.h>
-#include <string>
-#include "Application.hpp"
+#pragma once
 
-int CALLBACK WinMain(
-	_In_ HINSTANCE hInstance,
-	_In_ HINSTANCE hPrevInstance,
-	_In_ LPSTR     lpCmdLine,
-	_In_ int       nCmdShow)
-{
-	std::string cmdline(lpCmdLine);
-	return Application(cmdline).run();
-}
+#define RESOLUTION_WIDTH 800
+#define RESOLUTION_HEIGHT 600
+
+#define MAX_PLAYERS 8
+#define MAX_GAME_OBJECTS_PER_PLAYER 64

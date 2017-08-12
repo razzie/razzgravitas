@@ -17,15 +17,48 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
 #include <Windows.h>
-#include <string>
 #include "Application.hpp"
+#include "Settings.hpp"
 
-int CALLBACK WinMain(
-	_In_ HINSTANCE hInstance,
-	_In_ HINSTANCE hPrevInstance,
-	_In_ LPSTR     lpCmdLine,
-	_In_ int       nCmdShow)
+Application::Application(const std::string& cmdline)
 {
-	std::string cmdline(lpCmdLine);
-	return Application(cmdline).run();
+}
+
+Application::~Application()
+{
+}
+
+int Application::run()
+{
+	auto exit_code_future = m_exit_code.get_future();
+
+	m_window.start(this, 0);
+	m_world.start(this, 0);
+
+	int exit_code = exit_code_future.get();
+
+	m_world.stop();
+	m_window.stop();
+
+	return exit_code;
+}
+
+void Application::exit(int code, const char* msg)
+{
+	if (msg)
+	{
+		MessageBoxA(NULL, msg, "Exit message", MB_OK);
+	}
+
+	m_exit_code.set_value(code);
+}
+
+raz::Thread<GameWindow>& Application::getGameWindow()
+{
+	return m_window;
+}
+
+raz::Thread<GameWorld>& Application::getGameWorld()
+{
+	return m_world;
 }
