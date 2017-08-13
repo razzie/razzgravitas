@@ -41,6 +41,7 @@ private:
 	sf::CircleShape m_game_object_shape;
 	sf::CircleShape m_mouse_shape;
 	sf::RectangleShape m_clear_rect;
+	uint16_t m_player_id;
 	float m_mouse_radius;
 	int m_mouse_drag_x;
 	int m_mouse_drag_y;

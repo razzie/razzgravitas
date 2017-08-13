@@ -17,11 +17,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
 #include <cmath>
+#include <stdexcept>
 #include "Application.hpp"
 #include "GameWorld.hpp"
 #include "GameObject.hpp"
 #include "GameWindow.hpp"
-#include "Settings.hpp"
 
 static constexpr double PI = 3.14159265358979323846;
 static constexpr float G = 10.0f;
@@ -52,6 +52,18 @@ void GameWorld::render(GameWindow& window) const
 	}
 }
 
+void GameWorld::sync(GameObjectState& state)
+{
+	if (state.player_id >= MAX_GAME_OBJECTS_PER_PLAYER || state.object_id >= MAX_GAME_OBJECTS_PER_PLAYER)
+		throw std::runtime_error("sync error");
+
+	GameObject* obj = m_obj_db[state.player_id][state.object_id];
+	if (obj == nullptr)
+		throw std::runtime_error("sync error");
+
+	state.apply(obj->body);
+}
+
 void GameWorld::operator()()
 {
 	std::lock_guard<std::mutex> guard(m_lock);
@@ -77,10 +89,10 @@ void GameWorld::operator()()
 			float dist = std::sqrt(dir.Length());
 			float angle = (float)std::atan2(dir.y, dir.x) + (float)PI;
 			float force = (G * body->GetMass() * body2->GetMass()) / dist;
-			b2Vec2 forceVect(std::cos(angle) * force, std::sin(angle) * force);
+			b2Vec2 force_vect(std::cos(angle) * force, std::sin(angle) * force);
 
-			body->ApplyForce(forceVect, body->GetPosition(), true);
-			body2->ApplyForce(-forceVect, body2->GetPosition(), true);
+			body->ApplyForce(force_vect, body->GetPosition(), true);
+			body2->ApplyForce(-force_vect, body2->GetPosition(), true);
 		}
 	}
 
@@ -94,17 +106,22 @@ void GameWorld::operator()(AddGameObject e)
 
 	std::lock_guard<std::mutex> guard(m_lock);
 
+	uint16_t obj_id;
+	if (!findNewObjectID(e.player_id, obj_id))
+		return;
+
 	GameObject* obj = new GameObject();
+	obj->player_id = e.player_id;
+	obj->object_id = obj_id;
 	obj->radius = e.radius;
 
-	// TODO
-	obj->player_id = 0;
-	obj->object_id = 0;
+	m_obj_db[e.player_id][obj_id] = obj;
+	m_obj_slots[e.player_id].set(obj_id);
 
 	b2BodyDef def;
 	def.type = b2_dynamicBody;
 	def.position.Set(e.position_x, e.position_y);
-	//def.fixedRotation = true;
+	def.fixedRotation = true;
 	def.userData = obj;
 
 	b2Body* body = m_world.CreateBody(&def);
@@ -140,8 +157,11 @@ void GameWorld::operator()(RemoveGameObjects e)
 			float r = e.radius;
 			b2Vec2 p = body->GetPosition();
 
-			if ((p - mouse).LengthSquared() < r * r)
+			if (obj->player_id == e.player_id && (p - mouse).LengthSquared() < r * r)
 			{
+				m_obj_db[obj->player_id][obj->object_id] = nullptr;
+				m_obj_slots[obj->player_id].unset(obj->object_id);
+
 				delete obj;
 				m_world.DestroyBody(body);
 			}
@@ -149,6 +169,11 @@ void GameWorld::operator()(RemoveGameObjects e)
 
 		body = next_body;
 	}
+}
+
+void GameWorld::operator()(std::exception& e)
+{
+	m_app->exit(-1, e.what());
 }
 
 void GameWorld::setLevelBounds(float width, float height)
@@ -183,4 +208,19 @@ void GameWorld::setLevelBounds(float width, float height)
 	// bottom
 	shape.SetAsBox(hwidth + 1.f, 1.f, b2Vec2(0.f, hheight), 0.f);
 	body->CreateFixture(&fixture);
+}
+
+bool GameWorld::findNewObjectID(uint16_t player_id, uint16_t& object_id)
+{
+	if (player_id >= MAX_PLAYERS)
+		return false;
+
+	auto free_slots = m_obj_slots[player_id].falsebits();
+	auto slot = free_slots.begin();
+
+	if (slot == free_slots.end())
+		return false;
+
+	object_id = (uint16_t)*slot;
+	return true;
 }
