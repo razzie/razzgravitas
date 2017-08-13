@@ -19,13 +19,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #pragma once
 
 #include <cstdint>
+#include <exception>
 #include <mutex>
 #include <Box2D/Box2D.h>
+#include <raz/bitset.hpp>
 #include <raz/timer.hpp>
 #include "Events.hpp"
+#include "Settings.hpp"
 
 class Application;
 class GameWindow;
+struct GameObject;
+struct GameObjectState;
 
 class GameWorld
 {
@@ -33,15 +38,20 @@ public:
 	GameWorld(Application* app, uint16_t player_id);
 	~GameWorld();
 	void render(GameWindow& window) const;
+	void sync(GameObjectState& state);
 	void operator()(); // loop
 	void operator()(AddGameObject e);
 	void operator()(RemoveGameObjects e);
+	void operator()(std::exception& e);
 
 private:
 	mutable std::mutex m_lock;
 	Application* m_app;
 	raz::Timer m_timer;
 	b2World m_world;
+	GameObject* m_obj_db[MAX_PLAYERS][MAX_GAME_OBJECTS_PER_PLAYER];
+	raz::Bitset<MAX_GAME_OBJECTS_PER_PLAYER> m_obj_slots[MAX_PLAYERS];
 
 	void setLevelBounds(float width, float height);
+	bool findNewObjectID(uint16_t player_id, uint16_t& object_id);
 };

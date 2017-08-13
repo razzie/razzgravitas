@@ -27,7 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 class Application
 {
 public:
-	Application(const std::string& cmdline);
+	Application(const char* cmdline);
 	~Application();
 	int run();
 	void exit(int exit_code, const char* msg = nullptr);
@@ -35,6 +35,7 @@ public:
 	raz::Thread<GameWorld>& getGameWorld();
 
 private:
+	std::string m_cmdline;
 	std::promise<int> m_exit_code;
 	raz::Thread<GameWindow> m_window;
 	raz::Thread<GameWorld> m_world;

@@ -18,6 +18,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
+#include <cstdint>
+
 struct AddGameObject
 {
 	float position_x;
@@ -25,6 +27,7 @@ struct AddGameObject
 	float radius;
 	float velocity_x;
 	float velocity_y;
+	uint16_t player_id;
 };
 
 struct RemoveGameObjects
@@ -32,4 +35,5 @@ struct RemoveGameObjects
 	float position_x;
 	float position_y;
 	float radius;
+	uint16_t player_id;
 };

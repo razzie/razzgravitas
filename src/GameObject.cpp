@@ -16,35 +16,29 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#pragma once
+#include <Box2D/Box2D.h>
+#include "GameObject.hpp"
 
-#include <cstdint>
-
-class b2Body;
-
-struct GameObject
+void GameObjectState::init(const b2Body* body)
 {
-	uint16_t player_id;
-	uint16_t object_id;
-	float radius;
-	b2Body* body;
-};
+	GameObject* obj = static_cast<GameObject*>(body->GetUserData());
 
-struct GameObjectState
+	player_id = obj->player_id;
+	object_id = obj->object_id;
+	position_x = body->GetPosition().x;
+	position_y = body->GetPosition().y;
+	velocity_x = body->GetLinearVelocity().x;
+	velocity_y = body->GetLinearVelocity().y;
+}
+
+void GameObjectState::apply(b2Body* body)
 {
-	uint16_t player_id;
-	uint16_t object_id;
-	float position_x;
-	float position_y;
-	float velocity_x;
-	float velocity_y;
+#ifdef _DEBUG
+	GameObject* obj = static_cast<GameObject*>(body->GetUserData());
+	if (obj->player_id != player_id || obj->object_id != object_id)
+		return;
+#endif
 
-	void init(const b2Body* body);
-	void apply(b2Body* body);
-
-	template<class Serializer>
-	void operator()(Serializer& serializer)
-	{
-		serializer(player_id)(object_id)(radius)(position_x)(position_y)(velocity_x)(velocity_y);
-	}
-};
+	body->SetTransform(b2Vec2(position_x, position_y), 0.f);
+	body->SetLinearVelocity(b2Vec2(velocity_x, velocity_y));
+}

@@ -20,7 +20,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "Application.hpp"
 #include "Settings.hpp"
 
-Application::Application(const std::string& cmdline)
+Application::Application(const char* cmdline) :
+	m_cmdline(cmdline)
 {
 }
 

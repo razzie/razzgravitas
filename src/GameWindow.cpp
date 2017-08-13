@@ -61,6 +61,7 @@ static sf::View getLetterboxView(sf::View view, int windowWidth, int windowHeigh
 
 GameWindow::GameWindow(Application* app, uint16_t player_id) :
 	m_app(app),
+	m_player_id(player_id),
 	m_mouse_radius(6.f),
 	m_mouse_drag_x(0),
 	m_mouse_drag_y(0),
@@ -158,6 +159,7 @@ void GameWindow::operator()()
 					e.radius = m_mouse_radius;
 					e.velocity_x = pos.x - last_pos.x;
 					e.velocity_y = pos.y - last_pos.y;
+					e.player_id = m_player_id;
 					m_app->getGameWorld()(e);
 				}
 				else if (event.mouseButton.button == sf::Mouse::Right)
@@ -166,6 +168,7 @@ void GameWindow::operator()()
 					e.position_x = pos.x;
 					e.position_y = pos.y;
 					e.radius = m_mouse_radius;
+					e.player_id = m_player_id;
 					m_app->getGameWorld()(e);
 				}
 			}
