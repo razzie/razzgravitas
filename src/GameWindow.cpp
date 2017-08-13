@@ -98,7 +98,7 @@ GameWindow::~GameWindow()
 void GameWindow::drawGameObject(float x, float y, float r, raz::Color color)
 {
 	m_game_object_shape.setOutlineColor(sf::Color(color.r, color.g, color.b));
-	m_game_object_shape.setFillColor(sf::Color(color.r, color.g, color.b, 128));
+	m_game_object_shape.setFillColor(sf::Color(color.r / 2 + 127, color.g / 2 + 127, color.b / 2 + 127));
 	m_game_object_shape.setPosition(x - r + 1.f, y - r + 1.f);
 	m_game_object_shape.setRadius(r - 1.f);
 	m_window.draw(m_game_object_shape);
