@@ -19,6 +19,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <raz/hash.hpp>
 #include "Settings.hpp"
 #include "GameObject.hpp"
@@ -27,6 +28,7 @@ enum class EventType : uint32_t
 {
 	Connected                = (uint32_t)raz::hash("Connected"),
 	Disconnected             = (uint32_t)raz::hash("Disconnected"),
+	Message                  = (uint32_t)raz::hash("Message"),
 	AddGameObject            = (uint32_t)raz::hash("AddGameObject"),
 	RemoveGameObjects        = (uint32_t)raz::hash("RemoveGameObjects"),
 	RemovePlayerGameObjects  = (uint32_t)raz::hash("RemovePlayerGameObjects"),
@@ -59,6 +61,18 @@ struct Disconnected
 	{
 		int& _reason = *(int*)(&reason);
 		serializer(_reason);
+	}
+};
+
+struct Message
+{
+	uint16_t player_id;
+	std::basic_string<uint32_t, std::char_traits<uint32_t>, std::allocator<uint32_t>> message;
+
+	template<class Serializer>
+	void operator()(Serializer& serializer)
+	{
+		serializer(player_id)(message);
 	}
 };
 

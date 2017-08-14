@@ -107,6 +107,28 @@ void Network::operator()(Disconnected e)
 		m_app->exit(-1, msg);
 }
 
+void Network::operator()(Message e)
+{
+	Packet packet;
+	packet.setType((raz::PacketType)EventType::Message);
+	packet.setMode(raz::SerializationMode::SERIALIZE);
+	packet(e);
+
+	if (m_mode == NetworkMode::Server)
+	{
+		m_app->getGameWindow()(e);
+
+		for (auto player_slot : m_player_slots.truebits())
+		{
+			m_server.send(m_players[player_slot], packet);
+		}
+	}
+	else if (m_mode == NetworkMode::Client)
+	{
+		m_client.send(packet);
+	}
+}
+
 void Network::operator()(AddGameObject e)
 {
 	Packet packet;
@@ -241,6 +263,17 @@ void Network::handlePacket(Packet& packet)
 			Disconnected e;
 			packet(e);
 			(*this)(e);
+		}
+		break;
+
+	case EventType::Message:
+		{
+			Message e;
+			packet(e);
+			if (m_mode == NetworkMode::Client)
+				m_app->getGameWindow()(e);
+			else
+				(*this)(e);
 		}
 		break;
 
