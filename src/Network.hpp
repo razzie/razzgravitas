@@ -44,8 +44,10 @@ public:
 	NetworkMode getMode() const;
 	void operator()(); // loop
 	void operator()(Connected e);
+	void operator()(Disconnected e);
 	void operator()(AddGameObject e);
 	void operator()(RemoveGameObjects e);
+	void operator()(RemovePlayerGameObjects e);
 	void operator()(GameObjectSync e);
 	void operator()(std::exception& e);
 

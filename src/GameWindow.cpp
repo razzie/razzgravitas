@@ -79,7 +79,11 @@ GameWindow::GameWindow(Application* app, uint16_t player_id) :
 	m_view = getLetterboxView(m_view, RESOLUTION_WIDTH, RESOLUTION_HEIGHT);
 	m_window.setView(m_view);
 
-	raz::Color player_color = raz::ColorTable()[player_id];
+	raz::ColorTable color_table;
+	for (int i = 0; i < MAX_PLAYERS; ++i)
+		m_player_colors[i] = color_table[i];
+
+	raz::Color player_color = m_player_colors[player_id];
 
 	m_game_object_shape.setOutlineThickness(2.f);
 
@@ -96,8 +100,9 @@ GameWindow::~GameWindow()
 {
 }
 
-void GameWindow::drawGameObject(float x, float y, float r, raz::Color color)
+void GameWindow::drawGameObject(float x, float y, float r, uint16_t player_id)
 {
+	raz::Color color = m_player_colors[player_id];
 	m_game_object_shape.setOutlineColor(sf::Color(color.r, color.g, color.b));
 	m_game_object_shape.setFillColor(sf::Color(color.r / 2 + 127, color.g / 2 + 127, color.b / 2 + 127));
 	m_game_object_shape.setPosition(x - r + 1.f, y - r + 1.f);

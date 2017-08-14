@@ -16,6 +16,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
+#include <cstring>
 #include <cmath>
 #include <stdexcept>
 #include "Application.hpp"
@@ -31,6 +32,8 @@ GameWorld::GameWorld(Application* app) :
 	m_world(b2Vec2(0.f, 0.f))
 {
 	setLevelBounds(RESOLUTION_WIDTH, RESOLUTION_HEIGHT);
+
+	std::memset(m_obj_db, 0, sizeof(m_obj_db));
 }
 
 GameWorld::~GameWorld()
@@ -48,31 +51,7 @@ void GameWorld::render(GameWindow& window) const
 			continue;
 
 		b2Vec2 pos = body->GetPosition();
-		window.drawGameObject(pos.x, pos.y, obj->radius, raz::ColorTable()[obj->player_id]);
-	}
-}
-
-void GameWorld::sync(GameObjectState& state)
-{
-	if (state.player_id >= MAX_PLAYERS || state.object_id >= MAX_GAME_OBJECTS_PER_PLAYER)
-		throw std::runtime_error("sync error");
-
-	GameObject* obj = m_obj_db[state.player_id][state.object_id];
-	if (obj)
-	{
-		state.apply(obj->body);
-	}
-	else
-	{
-		AddGameObject e;
-		e.player_id = state.player_id;
-		e.position_x = state.position_x;
-		e.position_y = state.position_y;
-		e.radius = state.radius;
-		e.velocity_x = state.velocity_x;
-		e.velocity_y = state.velocity_y;
-		
-		addGameObject(e, state.object_id);
+		window.drawGameObject(pos.x, pos.y, obj->radius, obj->player_id);
 	}
 }
 
@@ -138,10 +117,34 @@ void GameWorld::operator()(RemoveGameObjects e)
 		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
 		if (obj != 0)
 		{
-			float r = e.radius;
-			b2Vec2 p = body->GetPosition();
+			float mouse_dist = (body->GetPosition() - mouse).Length();
 
-			if (obj->player_id == e.player_id && (p - mouse).LengthSquared() < r * r)
+			if (obj->player_id == e.player_id && (mouse_dist < e.radius || mouse_dist < obj->radius))
+			{
+				m_obj_db[obj->player_id][obj->object_id] = nullptr;
+				m_obj_slots[obj->player_id].unset(obj->object_id);
+
+				delete obj;
+				m_world.DestroyBody(body);
+			}
+		}
+
+		body = next_body;
+	}
+}
+
+void GameWorld::operator()(RemovePlayerGameObjects e)
+{
+	std::lock_guard<std::mutex> guard(m_lock);
+
+	for (b2Body* body = m_world.GetBodyList(); body != 0; )
+	{
+		b2Body* next_body = body->GetNext();
+
+		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
+		if (obj != 0)
+		{
+			if (obj->player_id == e.player_id)
 			{
 				m_obj_db[obj->player_id][obj->object_id] = nullptr;
 				m_obj_slots[obj->player_id].unset(obj->object_id);
@@ -157,6 +160,8 @@ void GameWorld::operator()(RemoveGameObjects e)
 
 void GameWorld::operator()(GameObjectSync e)
 {
+	std::lock_guard<std::mutex> guard(m_lock);
+
 	for (size_t i = 0; i < e.object_count; ++i)
 	{
 		sync(e.object_states[i]);
@@ -276,4 +281,28 @@ void GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id)
 	body->CreateFixture(&fixture);
 
 	body->SetLinearVelocity(b2Vec2(e.velocity_x, e.velocity_y));
+}
+
+void GameWorld::sync(GameObjectState& state)
+{
+	if (state.player_id >= MAX_PLAYERS || state.object_id >= MAX_GAME_OBJECTS_PER_PLAYER)
+		throw std::runtime_error("sync error");
+
+	GameObject* obj = m_obj_db[state.player_id][state.object_id];
+	if (obj)
+	{
+		state.apply(obj->body);
+	}
+	else
+	{
+		AddGameObject e;
+		e.player_id = state.player_id;
+		e.position_x = state.position_x;
+		e.position_y = state.position_y;
+		e.radius = state.radius;
+		e.velocity_x = state.velocity_x;
+		e.velocity_y = state.velocity_y;
+
+		addGameObject(e, state.object_id);
+	}
 }

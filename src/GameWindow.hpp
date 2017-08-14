@@ -21,6 +21,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <cstdint>
 #include <SFML/Graphics.hpp>
 #include <raz/color.hpp>
+#include "Settings.hpp"
 
 class Application;
 class GameWorld;
@@ -30,7 +31,7 @@ class GameWindow
 public:
 	GameWindow(Application* app, uint16_t player_id);
 	~GameWindow();
-	void drawGameObject(float x, float y, float r, raz::Color color);
+	void drawGameObject(float x, float y, float r, uint16_t player_id);
 	void operator()(); // loop
 	void operator()(GameWorld* world);
 
@@ -41,6 +42,7 @@ private:
 	sf::CircleShape m_game_object_shape;
 	sf::CircleShape m_mouse_shape;
 	sf::RectangleShape m_clear_rect;
+	raz::Color m_player_colors[MAX_PLAYERS];
 	uint16_t m_player_id;
 	float m_mouse_radius;
 	int m_mouse_drag_x;
