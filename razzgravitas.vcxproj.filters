@@ -560,6 +560,9 @@
     <ClInclude Include="src\Network.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\thirdparty\raz\hash.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\thirdparty\SFML\Graphics\Glsl.inl">

@@ -198,6 +198,7 @@
     <ClInclude Include="src\thirdparty\Box2D\Rope\b2Rope.h" />
     <ClInclude Include="src\thirdparty\raz\bitset.hpp" />
     <ClInclude Include="src\thirdparty\raz\color.hpp" />
+    <ClInclude Include="src\thirdparty\raz\hash.hpp" />
     <ClInclude Include="src\thirdparty\raz\memory.hpp" />
     <ClInclude Include="src\thirdparty\raz\network.hpp" />
     <ClInclude Include="src\thirdparty\raz\networkbackend.hpp" />
