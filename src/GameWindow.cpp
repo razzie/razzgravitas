@@ -20,6 +20,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "GameWindow.hpp"
 #include "GameWorld.hpp"
 #include "Settings.hpp"
+#include <ShlObj.h>
 
 /*
  * Source: https://github.com/SFML/SFML/wiki/Source:-Letterbox-effect-using-a-view
@@ -72,6 +73,7 @@ GameWindow::GameWindow(Application* app, uint16_t player_id) :
 
 	m_window.create(sf::VideoMode(RESOLUTION_WIDTH, RESOLUTION_HEIGHT), "RazzGravitas", (sf::Style::Resize + sf::Style::Close), settings);
 	m_window.setVerticalSyncEnabled(true);
+	m_window.setKeyRepeatEnabled(false);
 	m_window.clear(sf::Color::White);
 
 	m_view.setSize(RESOLUTION_WIDTH, RESOLUTION_HEIGHT);
@@ -94,6 +96,24 @@ GameWindow::GameWindow(Application* app, uint16_t player_id) :
 
 	m_clear_rect.setSize(sf::Vector2f(RESOLUTION_WIDTH, RESOLUTION_HEIGHT));
 	m_clear_rect.setFillColor(sf::Color(255, 255, 255, 4));
+
+	PWSTR font_filename;
+	SHGetKnownFolderPath(FOLDERID_Fonts, 0, NULL, &font_filename);
+	m_font.loadFromFile(sf::String(font_filename) + "/arial.ttf");
+	CoTaskMemFree(font_filename);
+
+	m_msg.setFont(m_font);
+	m_msg.setOutlineColor(sf::Color::White);
+	m_msg.setOutlineThickness(1.f);
+	m_msg.setPosition(10, 10);
+	m_msg.setCharacterSize(MESSAGE_CHAR_SIZE);
+
+	m_input.setFont(m_font);
+	m_input.setOutlineColor(sf::Color::White);
+	m_input.setOutlineThickness(1.f);
+	m_input.setFillColor(sf::Color(player_color.r, player_color.g, player_color.b));
+	m_input.setPosition(10, RESOLUTION_HEIGHT - MESSAGE_CHAR_SIZE - 10);
+	m_input.setCharacterSize(MESSAGE_CHAR_SIZE);
 }
 
 GameWindow::~GameWindow()
@@ -130,6 +150,35 @@ void GameWindow::operator()()
 			m_window.clear(sf::Color::White);
 			break;
 
+		case sf::Event::TextEntered:
+			if (event.text.unicode >= 32)
+				m_input.setString(m_input.getString() + event.text.unicode);
+			break;
+
+		case sf::Event::KeyPressed:
+			switch (event.key.code)
+			{
+			case sf::Keyboard::BackSpace:
+				if (!m_input.getString().isEmpty())
+				{
+					auto msg = m_input.getString();
+					msg.erase(m_input.getString().getSize() - 1);
+					m_input.setString(msg);
+				}
+				break;
+
+			case sf::Keyboard::Return:
+				{
+					Message e;
+					e.player_id = m_player_id;
+					e.message = m_input.getString().getData();
+					m_app->getNetwork()(e);
+				}
+				m_input.setString({});
+				break;
+			}
+			break;
+
 		case sf::Event::MouseWheelMoved:
 			m_mouse_radius += event.mouseWheel.delta * 2;
 			if (m_mouse_radius < 2.f)
@@ -152,32 +201,30 @@ void GameWindow::operator()()
 			break;
 
 		case sf::Event::MouseButtonReleased:
+			m_mouse_down = false;
+			auto pos = m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window));
+			if (event.mouseButton.button == sf::Mouse::Left)
 			{
-				m_mouse_down = false;
-				auto pos = m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window));
-				if (event.mouseButton.button == sf::Mouse::Left)
-				{
-					auto last_pos = m_window.mapPixelToCoords(sf::Vector2i(m_mouse_drag_x, m_mouse_drag_y));
-					AddGameObject e;
-					e.position_x = last_pos.x;
-					e.position_y = last_pos.y;
-					e.radius = m_mouse_radius;
-					e.velocity_x = pos.x - last_pos.x;
-					e.velocity_y = pos.y - last_pos.y;
-					e.player_id = m_player_id;
-					m_app->getGameWorld()(e);
-					m_app->getNetwork()(e);
-				}
-				else if (event.mouseButton.button == sf::Mouse::Right)
-				{
-					RemoveGameObjects e;
-					e.position_x = pos.x;
-					e.position_y = pos.y;
-					e.radius = m_mouse_radius;
-					e.player_id = m_player_id;
-					m_app->getGameWorld()(e);
-					m_app->getNetwork()(e);
-				}
+				auto last_pos = m_window.mapPixelToCoords(sf::Vector2i(m_mouse_drag_x, m_mouse_drag_y));
+				AddGameObject e;
+				e.position_x = last_pos.x;
+				e.position_y = last_pos.y;
+				e.radius = m_mouse_radius;
+				e.velocity_x = pos.x - last_pos.x;
+				e.velocity_y = pos.y - last_pos.y;
+				e.player_id = m_player_id;
+				m_app->getGameWorld()(e);
+				m_app->getNetwork()(e);
+			}
+			else if (event.mouseButton.button == sf::Mouse::Right)
+			{
+				RemoveGameObjects e;
+				e.position_x = pos.x;
+				e.position_y = pos.y;
+				e.radius = m_mouse_radius;
+				e.player_id = m_player_id;
+				m_app->getGameWorld()(e);
+				m_app->getNetwork()(e);
 			}
 			break;
 		}
@@ -203,10 +250,37 @@ void GameWindow::operator()()
 	}
 	m_window.draw(m_mouse_shape);
 
+	if (!m_msg_queue.empty())
+	{
+		if (m_msg_timer.peekElapsed() > MESSAGE_TIMEOUT / m_msg_queue.size())
+		{
+			m_msg_timer.reset();
+
+			Message msg = m_msg_queue.back();
+			m_msg_queue.pop();
+
+			raz::Color color = m_player_colors[msg.player_id];
+			m_msg.setFillColor(sf::Color(color.r, color.g, color.b));
+			m_msg.setString(msg.message.c_str());
+		}
+	}
+	else if (m_msg_timer.peekElapsed() > MESSAGE_TIMEOUT)
+	{
+		m_msg.setString({});
+	}
+
+	m_window.draw(m_msg);
+	m_window.draw(m_input);
+
 	m_window.display();
 }
 
 void GameWindow::operator()(GameWorld* world)
 {
 	world->render(*this);
+}
+
+void GameWindow::operator()(Message e)
+{
+	m_msg_queue.push(e);
 }

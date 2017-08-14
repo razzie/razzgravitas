@@ -19,9 +19,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #pragma once
 
 #include <cstdint>
+#include <queue>
 #include <SFML/Graphics.hpp>
 #include <raz/color.hpp>
+#include <raz/timer.hpp>
 #include "Settings.hpp"
+#include "Events.hpp"
 
 class Application;
 class GameWorld;
@@ -34,6 +37,7 @@ public:
 	void drawGameObject(float x, float y, float r, uint16_t player_id);
 	void operator()(); // loop
 	void operator()(GameWorld* world);
+	void operator()(Message e);
 
 private:
 	Application* m_app;
@@ -44,6 +48,11 @@ private:
 	sf::RectangleShape m_clear_rect;
 	raz::Color m_player_colors[MAX_PLAYERS];
 	uint16_t m_player_id;
+	std::queue<Message> m_msg_queue;
+	raz::Timer m_msg_timer;
+	sf::Font m_font;
+	sf::Text m_msg;
+	sf::Text m_input;
 	float m_mouse_radius;
 	int m_mouse_drag_x;
 	int m_mouse_drag_y;

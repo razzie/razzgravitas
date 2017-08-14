@@ -45,6 +45,7 @@ public:
 	void operator()(); // loop
 	void operator()(Connected e);
 	void operator()(Disconnected e);
+	void operator()(Message e);
 	void operator()(AddGameObject e);
 	void operator()(RemoveGameObjects e);
 	void operator()(RemovePlayerGameObjects e);
