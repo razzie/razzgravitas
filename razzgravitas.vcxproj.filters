@@ -317,22 +317,7 @@
     <ClInclude Include="src\thirdparty\raz\bitset.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\thirdparty\raz\callback.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\thirdparty\raz\color.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\thirdparty\raz\event.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\thirdparty\raz\eventutil.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\thirdparty\raz\functional.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\thirdparty\raz\hash.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\thirdparty\raz\memory.hpp">
@@ -348,12 +333,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\thirdparty\raz\serialization.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\thirdparty\raz\storage.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\thirdparty\raz\stream.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\thirdparty\raz\thread.hpp">
