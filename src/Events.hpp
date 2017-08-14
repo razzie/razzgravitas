@@ -45,9 +45,19 @@ struct Connected
 
 struct Disconnected
 {
+	enum Reason
+	{
+		ServerClosed,
+		ServerFull
+	};
+
+	Reason reason;
+
 	template<class Serializer>
 	void operator()(Serializer& serializer)
 	{
+		int& _reason = *(int*)(&reason);
+		serializer(_reason);
 	}
 };
 

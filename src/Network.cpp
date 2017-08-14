@@ -48,8 +48,13 @@ Network::~Network()
 {
 	if (m_mode == NetworkMode::Server)
 	{
+		Disconnected e;
+		e.reason = Disconnected::ServerClosed;
+
 		Packet packet;
 		packet.setType((raz::PacketType)EventType::Disconnected);
+		packet.setMode(raz::SerializationMode::SERIALIZE);
+		packet(e);
 
 		for (auto slot : m_player_slots.truebits())
 		{
@@ -85,8 +90,21 @@ void Network::operator()(Connected e)
 
 void Network::operator()(Disconnected e)
 {
+	char* msg = nullptr;
+
+	switch (e.reason)
+	{
+	case Disconnected::ServerClosed:
+		msg = "Server closed";
+		break;
+
+	case Disconnected::ServerFull:
+		msg = "Server full";
+		break;
+	}
+
 	if (m_mode == NetworkMode::Client)
-		m_app->exit(-1, "Server closed");
+		m_app->exit(-1, msg);
 }
 
 void Network::operator()(AddGameObject e)
@@ -267,6 +285,15 @@ void Network::handleConnect(Client& client)
 
 	if (slot == player_slots.end())
 	{
+		Disconnected e;
+		e.reason = Disconnected::ServerClosed;
+
+		Packet packet;
+		packet.setType((raz::PacketType)EventType::Disconnected);
+		packet.setMode(raz::SerializationMode::SERIALIZE);
+		packet(e);
+
+		m_server.send(client, packet);
 		m_server.getBackend().close(client);
 	}
 	else

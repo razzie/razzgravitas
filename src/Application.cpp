@@ -51,12 +51,12 @@ int Application::run()
 
 void Application::exit(int code, const char* msg)
 {
+	m_exit_code.set_value(code);
+
 	if (msg)
 	{
 		MessageBoxA(NULL, msg, "Exit message", MB_OK);
 	}
-
-	m_exit_code.set_value(code);
 }
 
 raz::Thread<GameWindow>& Application::getGameWindow()
