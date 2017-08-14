@@ -161,6 +161,7 @@ void GameWindow::operator()()
 					e.velocity_y = pos.y - last_pos.y;
 					e.player_id = m_player_id;
 					m_app->getGameWorld()(e);
+					m_app->getNetwork()(e);
 				}
 				else if (event.mouseButton.button == sf::Mouse::Right)
 				{
@@ -170,6 +171,7 @@ void GameWindow::operator()()
 					e.radius = m_mouse_radius;
 					e.player_id = m_player_id;
 					m_app->getGameWorld()(e);
+					m_app->getNetwork()(e);
 				}
 			}
 			break;

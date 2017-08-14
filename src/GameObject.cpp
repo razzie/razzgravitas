@@ -27,6 +27,7 @@ void GameObjectState::init(const b2Body* body)
 	object_id = obj->object_id;
 	position_x = body->GetPosition().x;
 	position_y = body->GetPosition().y;
+	radius = obj->radius;
 	velocity_x = body->GetLinearVelocity().x;
 	velocity_y = body->GetLinearVelocity().y;
 }

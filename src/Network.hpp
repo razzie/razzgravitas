@@ -18,43 +18,55 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
-#include <cstdint>
+#include <string>
 #include <exception>
-#include <mutex>
-#include <Box2D/Box2D.h>
 #include <raz/bitset.hpp>
+#include <raz/network.hpp>
+#include <raz/networkbackend.hpp>
 #include <raz/timer.hpp>
 #include "Events.hpp"
 #include "Settings.hpp"
 
 class Application;
-class GameWindow;
-struct GameObject;
-struct GameObjectState;
 
-class GameWorld
+enum NetworkMode
+{
+	Disabled,
+	Client,
+	Server
+};
+
+class Network
 {
 public:
-	GameWorld(Application* app);
-	~GameWorld();
-	void render(GameWindow& window) const;
-	void sync(GameObjectState& state);
+	Network(Application* app, const std::string& cmdline);
+	~Network();
+	NetworkMode getMode() const;
 	void operator()(); // loop
+	void operator()(Connected e);
 	void operator()(AddGameObject e);
 	void operator()(RemoveGameObjects e);
 	void operator()(GameObjectSync e);
-	void operator()(GameObjectSyncRequest);
 	void operator()(std::exception& e);
 
 private:
-	mutable std::mutex m_lock;
-	Application* m_app;
-	raz::Timer m_timer;
-	b2World m_world;
-	GameObject* m_obj_db[MAX_PLAYERS][MAX_GAME_OBJECTS_PER_PLAYER];
-	raz::Bitset<MAX_GAME_OBJECTS_PER_PLAYER> m_obj_slots[MAX_PLAYERS];
+	typedef raz::NetworkServerTCP::Client Client;
+	typedef raz::NetworkServerBackendTCP::ClientState ClientState;
+	typedef raz::NetworkServerTCP::ClientData<sizeof(GameObjectSync)> Data;
+	typedef decltype(Data::packet) Packet;
 
-	void setLevelBounds(float width, float height);
-	bool findNewObjectID(uint16_t player_id, uint16_t& object_id);
-	void addGameObject(const AddGameObject& e, uint16_t object_id);
+	Application* m_app;
+	NetworkMode m_mode;
+	raz::NetworkClientTCP m_client;
+	raz::NetworkServerTCP m_server;
+	raz::Timer m_timer;
+	Data m_data;
+	Client m_players[MAX_PLAYERS - 1];
+	raz::Bitset<MAX_PLAYERS - 1> m_player_slots;
+
+	void updateClient();
+	void updateServer();
+	void handlePacket(Packet& packet);
+	void handleConnect(Client& client);
+	void handleDisconnect(Client& client);
 };

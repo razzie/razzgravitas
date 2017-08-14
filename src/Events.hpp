@@ -19,6 +19,27 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #pragma once
 
 #include <cstdint>
+#include "Settings.hpp"
+#include "GameObject.hpp"
+
+enum class EventType : uint32_t
+{
+	Connected,
+	AddGameObject,
+	RemoveGameObjects,
+	GameObjectSync
+};
+
+struct Connected
+{
+	uint16_t player_id;
+
+	template<class Serializer>
+	void operator()(Serializer& serializer)
+	{
+		serializer(player_id);
+	}
+};
 
 struct AddGameObject
 {
@@ -28,6 +49,12 @@ struct AddGameObject
 	float velocity_x;
 	float velocity_y;
 	uint16_t player_id;
+
+	template<class Serializer>
+	void operator()(Serializer& serializer)
+	{
+		serializer(position_x)(position_y)(radius)(velocity_x)(velocity_y)(player_id);
+	}
 };
 
 struct RemoveGameObjects
@@ -36,4 +63,29 @@ struct RemoveGameObjects
 	float position_y;
 	float radius;
 	uint16_t player_id;
+
+	template<class Serializer>
+	void operator()(Serializer& serializer)
+	{
+		serializer(position_x)(position_y)(radius)(player_id);
+	}
+};
+
+struct GameObjectSync
+{
+	size_t object_count;
+	GameObjectState object_states[MAX_GAME_OBJECTS_PER_SYNC];
+
+	template<class Serializer>
+	void operator()(Serializer& serializer)
+	{
+		serializer(object_count);
+
+		for (size_t i = 0; i < object_count; ++i)
+			serializer(object_states[i]);
+	}
+};
+
+struct GameObjectSyncRequest
+{
 };

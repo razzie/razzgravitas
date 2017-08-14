@@ -93,6 +93,7 @@
     <ClCompile Include="src\GameWindow.cpp" />
     <ClCompile Include="src\GameWorld.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Network.cpp" />
     <ClCompile Include="src\thirdparty\Box2D\Collision\b2BroadPhase.cpp" />
     <ClCompile Include="src\thirdparty\Box2D\Collision\b2CollideCircle.cpp" />
     <ClCompile Include="src\thirdparty\Box2D\Collision\b2CollideEdge.cpp" />
@@ -146,6 +147,7 @@
     <ClInclude Include="src\GameObject.hpp" />
     <ClInclude Include="src\GameWindow.hpp" />
     <ClInclude Include="src\GameWorld.hpp" />
+    <ClInclude Include="src\Network.hpp" />
     <ClInclude Include="src\Settings.hpp" />
     <ClInclude Include="src\thirdparty\Box2D\Box2D.h" />
     <ClInclude Include="src\thirdparty\Box2D\Collision\b2BroadPhase.h" />
