@@ -25,8 +25,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 enum class EventType : uint32_t
 {
 	Connected,
+	Disconnected,
 	AddGameObject,
 	RemoveGameObjects,
+	RemovePlayerGameObjects,
 	GameObjectSync
 };
 
@@ -38,6 +40,14 @@ struct Connected
 	void operator()(Serializer& serializer)
 	{
 		serializer(player_id);
+	}
+};
+
+struct Disconnected
+{
+	template<class Serializer>
+	void operator()(Serializer& serializer)
+	{
 	}
 };
 
@@ -68,6 +78,17 @@ struct RemoveGameObjects
 	void operator()(Serializer& serializer)
 	{
 		serializer(position_x)(position_y)(radius)(player_id);
+	}
+};
+
+struct RemovePlayerGameObjects
+{
+	uint16_t player_id;
+
+	template<class Serializer>
+	void operator()(Serializer& serializer)
+	{
+		serializer(player_id);
 	}
 };
 

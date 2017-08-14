@@ -30,14 +30,14 @@ Network::Network(Application* app, const std::string& cmdline) :
 	{
 		m_app->getGameWindow().start(m_app, 0);
 
-		if (m_server.getBackend().open(12345))
+		if (m_server.getBackend().open(GAME_PORT))
 			m_mode = NetworkMode::Server;
 		else
 			throw raz::ThreadStop();
 	}
 	else
 	{
-		if (m_client.getBackend().open(cmdline.c_str(), 12345))
+		if (m_client.getBackend().open(cmdline.c_str(), GAME_PORT))
 			m_mode = NetworkMode::Client;
 		else
 			m_app->exit(-1, "couldn't connect");
@@ -46,8 +46,22 @@ Network::Network(Application* app, const std::string& cmdline) :
 
 Network::~Network()
 {
-	m_client.getBackend().close();
-	m_server.getBackend().close();
+	if (m_mode == NetworkMode::Server)
+	{
+		Packet packet;
+		packet.setType((raz::PacketType)EventType::Disconnected);
+
+		for (auto slot : m_player_slots.truebits())
+		{
+			m_server.send(m_players[slot], packet);
+		}
+
+		m_server.getBackend().close();
+	}
+	else if (m_mode == NetworkMode::Client)
+	{
+		m_client.getBackend().close();
+	}
 }
 
 NetworkMode Network::getMode() const
@@ -67,6 +81,12 @@ void Network::operator()(Connected e)
 {
 	if (m_mode == NetworkMode::Client)
 		m_app->getGameWindow().start(m_app, e.player_id);
+}
+
+void Network::operator()(Disconnected e)
+{
+	if (m_mode == NetworkMode::Client)
+		m_app->exit(-1, "Server closed");
 }
 
 void Network::operator()(AddGameObject e)
@@ -93,6 +113,26 @@ void Network::operator()(RemoveGameObjects e)
 {
 	Packet packet;
 	packet.setType((raz::PacketType)EventType::RemoveGameObjects);
+	packet.setMode(raz::SerializationMode::SERIALIZE);
+	packet(e);
+
+	if (m_mode == NetworkMode::Server)
+	{
+		for (auto player_slot : m_player_slots.truebits())
+		{
+			m_server.send(m_players[player_slot], packet);
+		}
+	}
+	else if (m_mode == NetworkMode::Client)
+	{
+		m_client.send(packet);
+	}
+}
+
+void Network::operator()(RemovePlayerGameObjects e)
+{
+	Packet packet;
+	packet.setType((raz::PacketType)EventType::RemovePlayerGameObjects);
 	packet.setMode(raz::SerializationMode::SERIALIZE);
 	packet(e);
 
@@ -178,6 +218,14 @@ void Network::handlePacket(Packet& packet)
 		}
 		break;
 
+	case EventType::Disconnected:
+		{
+			Disconnected e;
+			packet(e);
+			(*this)(e);
+		}
+		break;
+
 	case EventType::AddGameObject:
 		{
 			AddGameObject e;
@@ -189,6 +237,14 @@ void Network::handlePacket(Packet& packet)
 	case EventType::RemoveGameObjects:
 		{
 			RemoveGameObjects e;
+			packet(e);
+			m_app->getGameWorld()(e);
+		}
+		break;
+
+	case EventType::RemovePlayerGameObjects:
+		{
+			RemovePlayerGameObjects e;
 			packet(e);
 			m_app->getGameWorld()(e);
 		}
@@ -219,7 +275,7 @@ void Network::handleConnect(Client& client)
 		m_player_slots.set(*slot);
 
 		Connected e;
-		e.player_id = (uint16_t)(*slot + 1); // player 0 is this process
+		e.player_id = (uint16_t)(*slot + 1); // player 0 is this instance
 
 		Packet packet;
 		packet.setType((raz::PacketType)EventType::Connected);
@@ -234,9 +290,15 @@ void Network::handleDisconnect(Client& client)
 {
 	for (size_t slot : m_player_slots.truebits())
 	{
-		if (std::memcmp(&m_players[slot], &client, sizeof(Client)))
+		if (m_players[slot].socket == client.socket)
 		{
 			m_player_slots.unset(slot);
+
+			RemovePlayerGameObjects e;
+			e.player_id = (uint16_t)(slot + 1); // player 0 is this instance
+			(*this)(e);
+			m_app->getGameWorld()(e);
+
 			return;
 		}
 	}

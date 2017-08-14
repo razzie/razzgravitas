@@ -38,10 +38,10 @@ public:
 	GameWorld(Application* app);
 	~GameWorld();
 	void render(GameWindow& window) const;
-	void sync(GameObjectState& state);
 	void operator()(); // loop
 	void operator()(AddGameObject e);
 	void operator()(RemoveGameObjects e);
+	void operator()(RemovePlayerGameObjects e);
 	void operator()(GameObjectSync e);
 	void operator()(GameObjectSyncRequest);
 	void operator()(std::exception& e);
@@ -57,4 +57,5 @@ private:
 	void setLevelBounds(float width, float height);
 	bool findNewObjectID(uint16_t player_id, uint16_t& object_id);
 	void addGameObject(const AddGameObject& e, uint16_t object_id);
+	void sync(GameObjectState& state);
 };
