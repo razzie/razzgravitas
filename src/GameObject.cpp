@@ -36,17 +36,11 @@ void GameObjectState::apply(b2Body* body)
 {
 	GameObject* obj = static_cast<GameObject*>(body->GetUserData());
 
-#ifdef _DEBUG
-	if (obj->player_id != player_id || obj->object_id != object_id)
-		return;
-#endif
-
 	b2Vec2 position(position_x, position_y);
 	b2Vec2 velocity(velocity_x, velocity_y);
 
-	if ((position - body->GetPosition()).LengthSquared() > obj->radius * obj->radius)
+	if ((position - body->GetPosition()).LengthSquared() > velocity.LengthSquared())
 		body->SetTransform(position, 0.f);
 
-	if (b2Dot(body->GetLinearVelocity(), velocity) < 0.75f);
-		body->SetLinearVelocity(velocity);
+	body->SetLinearVelocity(velocity);
 }

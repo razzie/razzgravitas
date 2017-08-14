@@ -23,9 +23,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 Application::Application(const char* cmdline) :
 	m_cmdline(cmdline)
 {
-//#ifdef _DEBUG
-//	m_cmdline = "172.0.0.1";
-//#endif
 }
 
 Application::~Application()
