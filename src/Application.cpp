@@ -16,13 +16,16 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include <Windows.h>
 #include "Application.hpp"
+#include <Windows.h>
 #include "Settings.hpp"
 
 Application::Application(const char* cmdline) :
 	m_cmdline(cmdline)
 {
+//#ifdef _DEBUG
+//	m_cmdline = "172.0.0.1";
+//#endif
 }
 
 Application::~Application()
@@ -33,13 +36,15 @@ int Application::run()
 {
 	auto exit_code_future = m_exit_code.get_future();
 
-	m_window.start(this, 0);
-	m_world.start(this, 0);
+	m_network.start(this, m_cmdline);
+	m_world.start(this);
+	// network thread will start the window
 
 	int exit_code = exit_code_future.get();
 
-	m_world.stop();
 	m_window.stop();
+	m_world.stop();
+	m_network.stop();
 
 	return exit_code;
 }
@@ -62,4 +67,9 @@ raz::Thread<GameWindow>& Application::getGameWindow()
 raz::Thread<GameWorld>& Application::getGameWorld()
 {
 	return m_world;
+}
+
+raz::Thread<Network>& Application::getNetwork()
+{
+	return m_network;
 }

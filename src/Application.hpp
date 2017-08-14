@@ -23,6 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <raz/thread.hpp>
 #include "GameWindow.hpp"
 #include "GameWorld.hpp"
+#include "Network.hpp"
 
 class Application
 {
@@ -33,10 +34,12 @@ public:
 	void exit(int exit_code, const char* msg = nullptr);
 	raz::Thread<GameWindow>& getGameWindow();
 	raz::Thread<GameWorld>& getGameWorld();
+	raz::Thread<Network>& getNetwork();
 
 private:
 	std::string m_cmdline;
 	std::promise<int> m_exit_code;
 	raz::Thread<GameWindow> m_window;
 	raz::Thread<GameWorld> m_world;
+	raz::Thread<Network> m_network;
 };

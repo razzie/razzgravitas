@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 static constexpr double PI = 3.14159265358979323846;
 static constexpr float G = 10.0f;
 
-GameWorld::GameWorld(Application* app, uint16_t player_id) :
+GameWorld::GameWorld(Application* app) :
 	m_app(app),
 	m_world(b2Vec2(0.f, 0.f))
 {
@@ -54,14 +54,26 @@ void GameWorld::render(GameWindow& window) const
 
 void GameWorld::sync(GameObjectState& state)
 {
-	if (state.player_id >= MAX_GAME_OBJECTS_PER_PLAYER || state.object_id >= MAX_GAME_OBJECTS_PER_PLAYER)
+	if (state.player_id >= MAX_PLAYERS || state.object_id >= MAX_GAME_OBJECTS_PER_PLAYER)
 		throw std::runtime_error("sync error");
 
 	GameObject* obj = m_obj_db[state.player_id][state.object_id];
-	if (obj == nullptr)
-		throw std::runtime_error("sync error");
-
-	state.apply(obj->body);
+	if (obj)
+	{
+		state.apply(obj->body);
+	}
+	else
+	{
+		AddGameObject e;
+		e.player_id = state.player_id;
+		e.position_x = state.position_x;
+		e.position_y = state.position_y;
+		e.radius = state.radius;
+		e.velocity_x = state.velocity_x;
+		e.velocity_y = state.velocity_y;
+		
+		addGameObject(e, state.object_id);
+	}
 }
 
 void GameWorld::operator()()
@@ -110,35 +122,7 @@ void GameWorld::operator()(AddGameObject e)
 	if (!findNewObjectID(e.player_id, obj_id))
 		return;
 
-	GameObject* obj = new GameObject();
-	obj->player_id = e.player_id;
-	obj->object_id = obj_id;
-	obj->radius = e.radius;
-
-	m_obj_db[e.player_id][obj_id] = obj;
-	m_obj_slots[e.player_id].set(obj_id);
-
-	b2BodyDef def;
-	def.type = b2_dynamicBody;
-	def.position.Set(e.position_x, e.position_y);
-	def.fixedRotation = true;
-	def.userData = obj;
-
-	b2Body* body = m_world.CreateBody(&def);
-	obj->body = body;
-
-	b2CircleShape shape;
-	shape.m_p.Set(0.f, 0.f);
-	shape.m_radius = e.radius;
-
-	b2FixtureDef fixture;
-	fixture.shape = &shape;
-	fixture.friction = 0.f;
-	fixture.restitution = 0.75f;
-	fixture.density = 0.005f;
-	body->CreateFixture(&fixture);
-
-	body->SetLinearVelocity(b2Vec2(e.velocity_x, e.velocity_y));
+	addGameObject(e, obj_id);
 }
 
 void GameWorld::operator()(RemoveGameObjects e)
@@ -168,6 +152,42 @@ void GameWorld::operator()(RemoveGameObjects e)
 		}
 
 		body = next_body;
+	}
+}
+
+void GameWorld::operator()(GameObjectSync e)
+{
+	for (size_t i = 0; i < e.object_count; ++i)
+	{
+		sync(e.object_states[i]);
+	}
+}
+
+void GameWorld::operator()(GameObjectSyncRequest)
+{
+	std::lock_guard<std::mutex> guard(m_lock);
+
+	GameObjectSync sync;
+	sync.object_count = 0;
+
+	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
+	{
+		if (!body->GetUserData())
+			continue;
+
+		sync.object_states[sync.object_count].init(body);
+		++sync.object_count;
+
+		if (sync.object_count == MAX_GAME_OBJECTS_PER_SYNC)
+		{
+			m_app->getNetwork()(sync);
+			sync.object_count = 0; // reset counter to refill the struct
+		}
+	}
+
+	if (sync.object_count > 0)
+	{
+		m_app->getNetwork()(sync);
 	}
 }
 
@@ -223,4 +243,37 @@ bool GameWorld::findNewObjectID(uint16_t player_id, uint16_t& object_id)
 
 	object_id = (uint16_t)*slot;
 	return true;
+}
+
+void GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id)
+{
+	GameObject* obj = new GameObject();
+	obj->player_id = e.player_id;
+	obj->object_id = object_id;
+	obj->radius = e.radius;
+
+	m_obj_db[e.player_id][object_id] = obj;
+	m_obj_slots[e.player_id].set(object_id);
+
+	b2BodyDef def;
+	def.type = b2_dynamicBody;
+	def.position.Set(e.position_x, e.position_y);
+	def.fixedRotation = true;
+	def.userData = obj;
+
+	b2Body* body = m_world.CreateBody(&def);
+	obj->body = body;
+
+	b2CircleShape shape;
+	shape.m_p.Set(0.f, 0.f);
+	shape.m_radius = e.radius;
+
+	b2FixtureDef fixture;
+	fixture.shape = &shape;
+	fixture.friction = 0.f;
+	fixture.restitution = 0.75f;
+	fixture.density = 0.005f;
+	body->CreateFixture(&fixture);
+
+	body->SetLinearVelocity(b2Vec2(e.velocity_x, e.velocity_y));
 }
