@@ -256,7 +256,7 @@ void GameWindow::operator()()
 		{
 			m_msg_timer.reset();
 
-			Message msg = m_msg_queue.back();
+			Message msg = m_msg_queue.front();
 			m_msg_queue.pop();
 
 			raz::Color color = m_player_colors[msg.player_id];
