@@ -19,17 +19,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #pragma once
 
 #include <cstdint>
+#include <raz/hash.hpp>
 #include "Settings.hpp"
 #include "GameObject.hpp"
 
 enum class EventType : uint32_t
 {
-	Connected,
-	Disconnected,
-	AddGameObject,
-	RemoveGameObjects,
-	RemovePlayerGameObjects,
-	GameObjectSync
+	Connected                = (uint32_t)raz::hash("Connected"),
+	Disconnected             = (uint32_t)raz::hash("Disconnected"),
+	AddGameObject            = (uint32_t)raz::hash("AddGameObject"),
+	RemoveGameObjects        = (uint32_t)raz::hash("RemoveGameObjects"),
+	RemovePlayerGameObjects  = (uint32_t)raz::hash("RemovePlayerGameObjects"),
+	GameObjectSync           = (uint32_t)raz::hash("GameObjectSync")
 };
 
 struct Connected
