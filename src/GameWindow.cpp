@@ -218,13 +218,12 @@ void GameWindow::operator()()
 			}
 			else if (event.mouseButton.button == sf::Mouse::Right)
 			{
-				RemoveGameObjects e;
+				RemoveGameObjectsNearMouse e;
 				e.position_x = pos.x;
 				e.position_y = pos.y;
 				e.radius = m_mouse_radius;
 				e.player_id = m_player_id;
 				m_app->getGameWorld()(e);
-				m_app->getNetwork()(e);
 			}
 			break;
 		}

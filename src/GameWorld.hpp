@@ -40,7 +40,8 @@ public:
 	void render(GameWindow& window) const;
 	void operator()(); // loop
 	void operator()(AddGameObject e);
-	void operator()(RemoveGameObjects e);
+	void operator()(RemoveGameObjectsNearMouse e);
+	void operator()(RemoveGameObject e);
 	void operator()(RemovePlayerGameObjects e);
 	void operator()(GameObjectSync e);
 	void operator()(GameObjectSyncRequest);
@@ -57,5 +58,6 @@ private:
 	void setLevelBounds(float width, float height);
 	bool findNewObjectID(uint16_t player_id, uint16_t& object_id);
 	void addGameObject(const AddGameObject& e, uint16_t object_id);
+	void removeGameObject(uint16_t player_id, uint16_t object_id, bool notify_server = false);
 	void sync(GameObjectState& state);
 };

@@ -103,7 +103,7 @@ void GameWorld::operator()(AddGameObject e)
 	addGameObject(e, obj_id);
 }
 
-void GameWorld::operator()(RemoveGameObjects e)
+void GameWorld::operator()(RemoveGameObjectsNearMouse e)
 {
 	std::lock_guard<std::mutex> guard(m_lock);
 
@@ -120,16 +120,19 @@ void GameWorld::operator()(RemoveGameObjects e)
 
 			if (obj->player_id == e.player_id && (mouse_dist < e.radius || mouse_dist < obj->radius))
 			{
-				m_obj_db[obj->player_id][obj->object_id] = nullptr;
-				m_obj_slots[obj->player_id].unset(obj->object_id);
-
-				delete obj;
-				m_world.DestroyBody(body);
+				removeGameObject(obj->player_id, obj->object_id, true);
 			}
 		}
 
 		body = next_body;
 	}
+}
+
+void GameWorld::operator()(RemoveGameObject e)
+{
+	std::lock_guard<std::mutex> guard(m_lock);
+
+	removeGameObject(e.player_id, e.object_id);
 }
 
 void GameWorld::operator()(RemovePlayerGameObjects e)
@@ -145,11 +148,7 @@ void GameWorld::operator()(RemovePlayerGameObjects e)
 		{
 			if (obj->player_id == e.player_id)
 			{
-				m_obj_db[obj->player_id][obj->object_id] = nullptr;
-				m_obj_slots[obj->player_id].unset(obj->object_id);
-
-				delete obj;
-				m_world.DestroyBody(body);
+				removeGameObject(obj->player_id, obj->object_id);
 			}
 		}
 
@@ -282,10 +281,34 @@ void GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id)
 	body->SetLinearVelocity(b2Vec2(e.velocity_x, e.velocity_y));
 }
 
+void GameWorld::removeGameObject(uint16_t player_id, uint16_t object_id, bool notify_server)
+{
+	if (player_id >= MAX_PLAYERS || object_id >= MAX_GAME_OBJECTS_PER_PLAYER)
+		throw std::runtime_error("ID error");
+
+	GameObject* obj = m_obj_db[player_id][object_id];
+	if (!obj)
+		return;
+
+	m_obj_db[player_id][object_id] = nullptr;
+	m_obj_slots[player_id].unset(object_id);
+
+	m_world.DestroyBody(obj->body);
+	delete obj;
+
+	if (notify_server)
+	{
+		RemoveGameObject e;
+		e.player_id = player_id;
+		e.object_id = object_id;
+		m_app->getNetwork()(e);
+	}
+}
+
 void GameWorld::sync(GameObjectState& state)
 {
 	if (state.player_id >= MAX_PLAYERS || state.object_id >= MAX_GAME_OBJECTS_PER_PLAYER)
-		throw std::runtime_error("sync error");
+		throw std::runtime_error("Sync ID error");
 
 	GameObject* obj = m_obj_db[state.player_id][state.object_id];
 	if (obj)

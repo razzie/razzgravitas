@@ -32,8 +32,6 @@ Network::Network(Application* app, const std::string& cmdline) :
 
 		if (m_server.getBackend().open(GAME_PORT))
 			m_mode = NetworkMode::Server;
-		else
-			throw raz::ThreadStop();
 	}
 	else
 	{
@@ -149,10 +147,10 @@ void Network::operator()(AddGameObject e)
 	}
 }
 
-void Network::operator()(RemoveGameObjects e)
+void Network::operator()(RemoveGameObject e)
 {
 	Packet packet;
-	packet.setType((raz::PacketType)EventType::RemoveGameObjects);
+	packet.setType((raz::PacketType)EventType::RemoveGameObject);
 	packet.setMode(raz::SerializationMode::SERIALIZE);
 	packet(e);
 
@@ -213,7 +211,6 @@ void Network::operator()(std::exception& e)
 void Network::updateClient()
 {
 	m_data.packet.reset();
-
 	if (!m_client.receive(m_data.packet, GAME_SYNC_TIMEOUT))
 		return;
 
@@ -224,7 +221,6 @@ void Network::updateClient()
 void Network::updateServer()
 {
 	m_data.packet.reset();
-
 	m_server.receive(m_data, GAME_SYNC_TIMEOUT);
 
 	switch (m_data.state)
@@ -241,9 +237,11 @@ void Network::updateServer()
 		m_data.packet.setMode(raz::SerializationMode::DESERIALIZE);
 		handlePacket(m_data.packet);
 		break;
-	}
 
-	m_app->getGameWorld()(GameObjectSyncRequest{});
+	case ClientState::UNSET:
+		m_app->getGameWorld()(GameObjectSyncRequest{});
+		break;
+	}
 }
 
 void Network::handlePacket(Packet& packet)
@@ -254,7 +252,8 @@ void Network::handlePacket(Packet& packet)
 		{
 			Connected e;
 			packet(e);
-			(*this)(e);
+			if (m_mode == NetworkMode::Client)
+				(*this)(e);
 		}
 		break;
 
@@ -262,7 +261,8 @@ void Network::handlePacket(Packet& packet)
 		{
 			Disconnected e;
 			packet(e);
-			(*this)(e);
+			if (m_mode == NetworkMode::Client)
+				(*this)(e);
 		}
 		break;
 
@@ -285,11 +285,14 @@ void Network::handlePacket(Packet& packet)
 		}
 		break;
 
-	case EventType::RemoveGameObjects:
+	case EventType::RemoveGameObject:
 		{
-			RemoveGameObjects e;
+			RemoveGameObject e;
 			packet(e);
 			m_app->getGameWorld()(e);
+
+			if (m_mode == NetworkMode::Server)
+				(*this)(e);
 		}
 		break;
 
@@ -305,7 +308,8 @@ void Network::handlePacket(Packet& packet)
 		{
 			GameObjectSync e;
 			packet(e);
-			m_app->getGameWorld()(e);
+			if (m_mode == NetworkMode::Client)
+				m_app->getGameWorld()(e);
 		}
 		break;
 	}
