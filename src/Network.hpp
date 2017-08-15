@@ -47,7 +47,7 @@ public:
 	void operator()(Disconnected e);
 	void operator()(Message e);
 	void operator()(AddGameObject e);
-	void operator()(RemoveGameObjects e);
+	void operator()(RemoveGameObject e);
 	void operator()(RemovePlayerGameObjects e);
 	void operator()(GameObjectSync e);
 	void operator()(std::exception& e);

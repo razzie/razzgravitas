@@ -30,7 +30,7 @@ enum class EventType : uint32_t
 	Disconnected             = (uint32_t)raz::hash("Disconnected"),
 	Message                  = (uint32_t)raz::hash("Message"),
 	AddGameObject            = (uint32_t)raz::hash("AddGameObject"),
-	RemoveGameObjects        = (uint32_t)raz::hash("RemoveGameObjects"),
+	RemoveGameObject         = (uint32_t)raz::hash("RemoveGameObject"),
 	RemovePlayerGameObjects  = (uint32_t)raz::hash("RemovePlayerGameObjects"),
 	GameObjectSync           = (uint32_t)raz::hash("GameObjectSync")
 };
@@ -92,17 +92,23 @@ struct AddGameObject
 	}
 };
 
-struct RemoveGameObjects
+struct RemoveGameObjectsNearMouse // internal
 {
 	float position_x;
 	float position_y;
 	float radius;
 	uint16_t player_id;
+};
+
+struct RemoveGameObject
+{
+	uint16_t player_id;
+	uint16_t object_id;
 
 	template<class Serializer>
 	void operator()(Serializer& serializer)
 	{
-		serializer(position_x)(position_y)(radius)(player_id);
+		serializer(player_id)(object_id);
 	}
 };
 
@@ -132,6 +138,6 @@ struct GameObjectSync
 	}
 };
 
-struct GameObjectSyncRequest
+struct GameObjectSyncRequest // internal
 {
 };
