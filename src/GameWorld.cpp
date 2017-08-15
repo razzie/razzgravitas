@@ -25,7 +25,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "GameWindow.hpp"
 
 static constexpr double PI = 3.14159265358979323846;
-static constexpr float G = 10.0f;
 
 GameWorld::GameWorld(Application* app) :
 	m_app(app),
@@ -77,9 +76,9 @@ void GameWorld::operator()()
 
 			b2Vec2 p2 = body2->GetPosition();
 			b2Vec2 dir = p - p2;
-			float dist = std::sqrt(dir.Length());
+			float dist = dir.LengthSquared();
 			float angle = (float)std::atan2(dir.y, dir.x) + (float)PI;
-			float force = (G * body->GetMass() * body2->GetMass()) / dist;
+			float force = (GRAVITY * body->GetMass() * body2->GetMass()) / dist;
 			b2Vec2 force_vect(std::cos(angle) * force, std::sin(angle) * force);
 
 			body->ApplyForce(force_vect, body->GetPosition(), true);
