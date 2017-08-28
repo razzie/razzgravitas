@@ -16,29 +16,33 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
+#include <ctime>
 #include <cstring>
 #include "Application.hpp"
 #include "Network.hpp"
 
-static raz::NetworkInitializer __init_network;
-
-Network::Network(Application* app, const std::string& cmdline) :
+Network::Network(IApplication* app, NetworkMode mode, const char* host) :
 	m_app(app),
-	m_mode(NetworkMode::Disabled)
+	m_mode(NetworkMode::Disabled),
+	m_sync_id_gen((uint64_t)std::time(NULL))
 {
-	if (cmdline.empty())
+	if (mode == NetworkMode::Server)
 	{
-		m_app->getGameWindow().start(m_app, 0);
-
 		if (m_server.getBackend().open(GAME_PORT))
 			m_mode = NetworkMode::Server;
+		else
+			m_app->exit(-1, "Cannot host game");
+	}
+	else if (mode == NetworkMode::Client)
+	{
+		if (m_client.getBackend().open(host, GAME_PORT))
+			m_mode = NetworkMode::Client;
+		else
+			m_app->exit(-1, "Cannot connect to server");
 	}
 	else
 	{
-		if (m_client.getBackend().open(cmdline.c_str(), GAME_PORT))
-			m_mode = NetworkMode::Client;
-		else
-			m_app->exit(-1, "couldn't connect");
+		throw raz::ThreadStop{};
 	}
 }
 
@@ -67,42 +71,12 @@ Network::~Network()
 	}
 }
 
-NetworkMode Network::getMode() const
-{
-	return m_mode;
-}
-
 void Network::operator()()
 {
 	if (m_mode == NetworkMode::Server)
 		updateServer();
 	else if (m_mode == NetworkMode::Client)
 		updateClient();
-}
-
-void Network::operator()(Connected e)
-{
-	if (m_mode == NetworkMode::Client)
-		m_app->getGameWindow().start(m_app, e.player_id);
-}
-
-void Network::operator()(Disconnected e)
-{
-	char* msg = nullptr;
-
-	switch (e.reason)
-	{
-	case Disconnected::ServerClosed:
-		msg = "Server closed";
-		break;
-
-	case Disconnected::ServerFull:
-		msg = "Server full";
-		break;
-	}
-
-	if (m_mode == NetworkMode::Client)
-		m_app->exit(-1, msg);
 }
 
 void Network::operator()(Message e)
@@ -114,14 +88,12 @@ void Network::operator()(Message e)
 
 	if (m_mode == NetworkMode::Server)
 	{
-		m_app->getGameWindow()(e);
-
 		for (auto player_slot : m_player_slots.truebits())
 		{
 			m_server.send(m_players[player_slot], packet);
 		}
 	}
-	else if (m_mode == NetworkMode::Client)
+	else
 	{
 		m_client.send(packet);
 	}
@@ -129,60 +101,26 @@ void Network::operator()(Message e)
 
 void Network::operator()(AddGameObject e)
 {
-	Packet packet;
-	packet.setType((raz::PacketType)EventType::AddGameObject);
-	packet.setMode(raz::SerializationMode::SERIALIZE);
-	packet(e);
+	if (m_mode == NetworkMode::Client)
+	{
+		Packet packet;
+		packet.setType((raz::PacketType)EventType::AddGameObject);
+		packet.setMode(raz::SerializationMode::SERIALIZE);
+		packet(e);
 
-	if (m_mode == NetworkMode::Server)
-	{
-		for (auto player_slot : m_player_slots.truebits())
-		{
-			m_server.send(m_players[player_slot], packet);
-		}
-	}
-	else if (m_mode == NetworkMode::Client)
-	{
 		m_client.send(packet);
 	}
 }
 
 void Network::operator()(RemoveGameObject e)
 {
-	Packet packet;
-	packet.setType((raz::PacketType)EventType::RemoveGameObject);
-	packet.setMode(raz::SerializationMode::SERIALIZE);
-	packet(e);
+	if (m_mode == NetworkMode::Client)
+	{
+		Packet packet;
+		packet.setType((raz::PacketType)EventType::RemoveGameObject);
+		packet.setMode(raz::SerializationMode::SERIALIZE);
+		packet(e);
 
-	if (m_mode == NetworkMode::Server)
-	{
-		for (auto player_slot : m_player_slots.truebits())
-		{
-			m_server.send(m_players[player_slot], packet);
-		}
-	}
-	else if (m_mode == NetworkMode::Client)
-	{
-		m_client.send(packet);
-	}
-}
-
-void Network::operator()(RemovePlayerGameObjects e)
-{
-	Packet packet;
-	packet.setType((raz::PacketType)EventType::RemovePlayerGameObjects);
-	packet.setMode(raz::SerializationMode::SERIALIZE);
-	packet(e);
-
-	if (m_mode == NetworkMode::Server)
-	{
-		for (auto player_slot : m_player_slots.truebits())
-		{
-			m_server.send(m_players[player_slot], packet);
-		}
-	}
-	else if (m_mode == NetworkMode::Client)
-	{
 		m_client.send(packet);
 	}
 }
@@ -239,80 +177,21 @@ void Network::updateServer()
 		break;
 
 	case ClientState::UNSET:
-		m_app->getGameWorld()(GameObjectSyncRequest{});
+		GameObjectSyncRequest e;
+		e.sync_id = (uint32_t)m_sync_id_gen();
+		m_app->handle(e, EventSource::Network);
 		break;
 	}
 }
 
-void Network::handlePacket(Packet& packet)
+bool Network::handlePacket(Packet& packet)
 {
-	switch ((EventType)packet.getType())
-	{
-	case EventType::Connected:
-		{
-			Connected e;
-			packet(e);
-			if (m_mode == NetworkMode::Client)
-				(*this)(e);
-		}
-		break;
-
-	case EventType::Disconnected:
-		{
-			Disconnected e;
-			packet(e);
-			if (m_mode == NetworkMode::Client)
-				(*this)(e);
-		}
-		break;
-
-	case EventType::Message:
-		{
-			Message e;
-			packet(e);
-			if (m_mode == NetworkMode::Client)
-				m_app->getGameWindow()(e);
-			else
-				(*this)(e);
-		}
-		break;
-
-	case EventType::AddGameObject:
-		{
-			AddGameObject e;
-			packet(e);
-			m_app->getGameWorld()(e);
-		}
-		break;
-
-	case EventType::RemoveGameObject:
-		{
-			RemoveGameObject e;
-			packet(e);
-			m_app->getGameWorld()(e);
-
-			if (m_mode == NetworkMode::Server)
-				(*this)(e);
-		}
-		break;
-
-	case EventType::RemovePlayerGameObjects:
-		{
-			RemovePlayerGameObjects e;
-			packet(e);
-			m_app->getGameWorld()(e);
-		}
-		break;
-
-	case EventType::GameObjectSync:
-		{
-			GameObjectSync e;
-			packet(e);
-			if (m_mode == NetworkMode::Client)
-				m_app->getGameWorld()(e);
-		}
-		break;
-	}
+	return (tryHandle<Connected>(packet)
+		|| tryHandle<Disconnected>(packet)
+		|| tryHandle<Message>(packet)
+		|| tryHandle<AddGameObject>(packet)
+		|| tryHandle<RemoveGameObject>(packet)
+		|| tryHandle<GameObjectSync>(packet));
 }
 
 void Network::handleConnect(Client& client)
@@ -360,8 +239,7 @@ void Network::handleDisconnect(Client& client)
 
 			RemovePlayerGameObjects e;
 			e.player_id = (uint16_t)(slot + 1); // player 0 is this instance
-			(*this)(e);
-			m_app->getGameWorld()(e);
+			m_app->handle(e, EventSource::Network);
 
 			return;
 		}

@@ -18,47 +18,22 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
-#include <cstdint>
+#include "Settings.hpp"
+#include "Events.hpp"
 
-class b2Body;
-
-struct GameObject
-{
-	uint16_t player_id;
-	uint16_t object_id;
-	float radius;
-	b2Body* body;
-	uint32_t last_sync_id;
-};
-
-struct GameObjectState
-{
-	uint16_t player_id;
-	uint16_t object_id;
-	float position_x;
-	float position_y;
-	float radius;
-	float velocity_x;
-	float velocity_y;
-
-	void init(const b2Body* body);
-	void apply(b2Body* body);
-
-	template<class Serializer>
-	void operator()(Serializer& serializer)
-	{
-		serializer(player_id)(object_id)(position_x)(position_y)(radius)(velocity_x)(velocity_y);
-	}
-};
-
-class IGameObjectRenderer
+class IApplication
 {
 public:
-	virtual void renderGameObject(float x, float y, float r, uint16_t player_id) = 0;
-};
-
-class IGameObjectRenderInvoker
-{
-public:
-	virtual void render(IGameObjectRenderer*) const = 0;
+	// I don't need virtual desctructor
+	virtual void exit(int exit_code, const char* msg = nullptr) = 0;
+	virtual void handle(Connected e, EventSource src) = 0;
+	virtual void handle(Disconnected e, EventSource src) = 0;
+	virtual void handle(Message e, EventSource src) = 0;
+	virtual void handle(AddGameObject e, EventSource src) = 0;
+	virtual void handle(RemoveGameObjectsNearMouse e, EventSource src) = 0;
+	virtual void handle(RemoveGameObject e, EventSource src) = 0;
+	virtual void handle(RemovePlayerGameObjects e, EventSource src) = 0;
+	virtual void handle(GameObjectSync e, EventSource src) = 0;
+	virtual void handle(GameObjectSyncRequest e, EventSource src) = 0;
+	virtual void handle(IGameObjectRenderInvoker*) = 0;
 };

@@ -23,11 +23,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <raz/bitset.hpp>
 #include <raz/network.hpp>
 #include <raz/networkbackend.hpp>
+#include <raz/random.hpp>
 #include <raz/timer.hpp>
-#include "Events.hpp"
-#include "Settings.hpp"
-
-class Application;
+#include "IApplication.hpp"
 
 enum NetworkMode
 {
@@ -39,16 +37,12 @@ enum NetworkMode
 class Network
 {
 public:
-	Network(Application* app, const std::string& cmdline);
+	Network(IApplication* app, NetworkMode mode, const char* host = nullptr);
 	~Network();
-	NetworkMode getMode() const;
 	void operator()(); // loop
-	void operator()(Connected e);
-	void operator()(Disconnected e);
 	void operator()(Message e);
 	void operator()(AddGameObject e);
 	void operator()(RemoveGameObject e);
-	void operator()(RemovePlayerGameObjects e);
 	void operator()(GameObjectSync e);
 	void operator()(std::exception& e);
 
@@ -58,18 +52,35 @@ private:
 	typedef raz::NetworkServerTCP::ClientData<sizeof(GameObjectSync)> Data;
 	typedef decltype(Data::packet) Packet;
 
-	Application* m_app;
+	raz::NetworkInitializer m_init;
+	IApplication* m_app;
 	NetworkMode m_mode;
 	raz::NetworkClientTCP m_client;
 	raz::NetworkServerTCP m_server;
 	raz::Timer m_timer;
+	raz::Random m_sync_id_gen;
 	Data m_data;
 	Client m_players[MAX_PLAYERS - 1];
 	raz::Bitset<MAX_PLAYERS - 1> m_player_slots;
 
 	void updateClient();
 	void updateServer();
-	void handlePacket(Packet& packet);
+	bool handlePacket(Packet& packet);
 	void handleConnect(Client& client);
 	void handleDisconnect(Client& client);
+
+	template<class Event>
+	bool tryHandle(Packet& packet)
+	{
+		if (packet.getType() == (raz::PacketType)Event::getEventType())
+		{
+			Event e;
+			packet.setMode(raz::SerializationMode::DESERIALIZE);
+			packet(e);
+			m_app->handle(e, EventSource::Network);
+			return true;
+		}
+
+		return false;
+	}
 };

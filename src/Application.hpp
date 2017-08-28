@@ -24,20 +24,41 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "GameWindow.hpp"
 #include "GameWorld.hpp"
 #include "Network.hpp"
+#include "IApplication.hpp"
 
-class Application
+enum class GameMode
+{
+	SingplePlay,
+	Host,
+	Client
+};
+
+class Application : public IApplication
 {
 public:
-	Application(const char* cmdline);
+	static int run(int argc, char** argv);
+
 	~Application();
-	int run();
-	void exit(int exit_code, const char* msg = nullptr);
-	raz::Thread<GameWindow>& getGameWindow();
-	raz::Thread<GameWorld>& getGameWorld();
-	raz::Thread<Network>& getNetwork();
+	virtual void exit(int exit_code, const char* msg = nullptr);
+	virtual void handle(Connected e, EventSource src);
+	virtual void handle(Disconnected e, EventSource src);
+	virtual void handle(Message e, EventSource src);
+	virtual void handle(AddGameObject e, EventSource src);
+	virtual void handle(RemoveGameObjectsNearMouse e, EventSource src);
+	virtual void handle(RemoveGameObject e, EventSource src);
+	virtual void handle(RemovePlayerGameObjects e, EventSource src);
+	virtual void handle(GameObjectSync e, EventSource src);
+	virtual void handle(GameObjectSyncRequest e, EventSource src);
+	virtual void handle(IGameObjectRenderInvoker*);
 
 private:
+	Application(int argc, char** argv);
+	int run();
+	void setGameMode(GameMode mode);
+	bool handleCommand(const std::string& cmd);
+
 	std::string m_cmdline;
+	GameMode m_mode;
 	std::promise<int> m_exit_code;
 	raz::Thread<GameWindow> m_window;
 	raz::Thread<GameWorld> m_world;

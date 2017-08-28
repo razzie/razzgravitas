@@ -17,12 +17,23 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
 #include "Application.hpp"
-#include <Windows.h>
 #include "Settings.hpp"
+#include <codecvt>
+#include <Windows.h>
 
-Application::Application(const char* cmdline) :
-	m_cmdline(cmdline)
+int Application::run(int argc, char** argv)
 {
+	return Application(argc, argv).run();
+}
+
+Application::Application(int argc, char** argv) :
+	m_mode(GameMode::SingplePlay)
+{
+	if (argc > 1)
+	{
+		m_cmdline = argv[1];
+		m_mode = GameMode::Client;
+	}
 }
 
 Application::~Application()
@@ -33,9 +44,7 @@ int Application::run()
 {
 	auto exit_code_future = m_exit_code.get_future();
 
-	m_network.start(this, m_cmdline);
-	m_world.start(this);
-	// network thread will start the window
+	setGameMode(m_mode);
 
 	int exit_code = exit_code_future.get();
 
@@ -46,27 +55,183 @@ int Application::run()
 	return exit_code;
 }
 
+void Application::setGameMode(GameMode mode)
+{
+	m_window.stop();
+	m_world.stop();
+	m_network.stop();
+
+	m_window.clear();
+	m_world.clear();
+	m_network.clear();
+
+	switch (mode)
+	{
+	case GameMode::SingplePlay:
+		m_window.start(this, 0);
+		m_world.start(this);
+		break;
+
+	case GameMode::Host:
+		m_window.start(this, 0);
+		m_world.start(this);
+		m_network.start(this, NetworkMode::Server, nullptr);
+		break;
+
+	case GameMode::Client:
+		m_world.start(this);
+		m_network.start(this, NetworkMode::Client, m_cmdline.c_str());
+		break;
+
+	default:
+		return;
+	}
+
+	m_mode = mode;
+}
+
+bool Application::handleCommand(const std::string& cmd)
+{
+	if (cmd.compare("/host") == 0)
+	{
+		std::thread(&Application::setGameMode, this, GameMode::Host).detach();
+		//setGameMode(GameMode::Host);
+		return true;
+	}
+	else if (cmd.compare(0, 9, "/connect ") == 0)
+	{
+		m_cmdline = &cmd[9];
+		std::thread(&Application::setGameMode, this, GameMode::Client).detach();
+		//setGameMode(GameMode::Client);
+		return true;
+	}
+
+	return false;
+}
+
 void Application::exit(int code, const char* msg)
 {
-	m_exit_code.set_value(code);
-
 	if (msg)
 	{
 		MessageBoxA(NULL, msg, "Exit message", MB_OK);
 	}
+
+	m_exit_code.set_value(code);
 }
 
-raz::Thread<GameWindow>& Application::getGameWindow()
+void Application::handle(Connected e, EventSource src)
 {
-	return m_window;
+	if (m_mode == GameMode::Client)
+	{
+		m_window.start(this, e.player_id);
+	}
 }
 
-raz::Thread<GameWorld>& Application::getGameWorld()
+void Application::handle(Disconnected e, EventSource src)
 {
-	return m_world;
+	if (m_mode == GameMode::Client)
+	{
+		char* msg = nullptr;
+
+		switch (e.reason)
+		{
+		case Disconnected::ServerClosed:
+			msg = "Server closed";
+			break;
+
+		case Disconnected::ServerFull:
+			msg = "Server full";
+			break;
+		}
+
+		exit(-1, msg);
+	}
 }
 
-raz::Thread<Network>& Application::getNetwork()
+void Application::handle(Message e, EventSource src)
 {
-	return m_network;
+
+	if (src == EventSource::GameWindow)
+	{
+		bool is_command = false;
+
+		if (e.message[0] == (uint32_t)'/')
+		{
+			using convert_type = std::codecvt_utf8<uint32_t>;
+			std::wstring_convert<convert_type, uint32_t> converter;
+			is_command = handleCommand(converter.to_bytes(e.message));
+		}
+
+		if (!is_command)
+		{
+			m_window(e);
+			m_network(e);
+		}
+	}
+	else
+	{
+		m_window(e);
+	}
+}
+
+void Application::handle(AddGameObject e, EventSource src)
+{
+	if (m_mode == GameMode::Client)
+	{
+		m_network(e);
+	}
+	else
+	{
+		m_world(e);
+	}
+}
+
+void Application::handle(RemoveGameObjectsNearMouse e, EventSource src)
+{
+	m_world(e);
+}
+
+void Application::handle(RemoveGameObject e, EventSource src)
+{
+	if (m_mode == GameMode::Client)
+	{
+		m_network(e);
+	}
+	else
+	{
+		m_world(e);
+	}
+}
+
+void Application::handle(RemovePlayerGameObjects e, EventSource src)
+{
+	if (m_mode == GameMode::Host)
+	{
+		m_world(e);
+	}
+}
+
+void Application::handle(GameObjectSync e, EventSource src)
+{
+	if (m_mode == GameMode::Client)
+	{
+		m_world(e);
+	}
+	else
+	{
+		m_network(e);
+	}
+}
+
+void Application::handle(GameObjectSyncRequest e, EventSource src)
+{
+	if (m_mode == GameMode::Host)
+	{
+		m_world(e);
+	}
+}
+
+void Application::handle(IGameObjectRenderInvoker* world)
+{
+	m_window(world);
 }

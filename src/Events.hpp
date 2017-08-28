@@ -26,16 +26,32 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 enum class EventType : uint32_t
 {
-	Connected                = (uint32_t)raz::hash("Connected"),
-	Disconnected             = (uint32_t)raz::hash("Disconnected"),
-	Message                  = (uint32_t)raz::hash("Message"),
-	AddGameObject            = (uint32_t)raz::hash("AddGameObject"),
-	RemoveGameObject         = (uint32_t)raz::hash("RemoveGameObject"),
-	RemovePlayerGameObjects  = (uint32_t)raz::hash("RemovePlayerGameObjects"),
-	GameObjectSync           = (uint32_t)raz::hash("GameObjectSync")
+	Unknown,
+	Connected         = (uint32_t)raz::hash("Connected"),
+	Disconnected      = (uint32_t)raz::hash("Disconnected"),
+	Message           = (uint32_t)raz::hash("Message"),
+	AddGameObject     = (uint32_t)raz::hash("AddGameObject"),
+	RemoveGameObject  = (uint32_t)raz::hash("RemoveGameObject"),
+	GameObjectSync    = (uint32_t)raz::hash("GameObjectSync")
 };
 
-struct Connected
+enum class EventSource
+{
+	GameWindow,
+	GameWorld,
+	Network
+};
+
+template<EventType T = EventType::Unknown>
+struct Event
+{
+	static EventType getEventType()
+	{
+		return T;
+	}
+};
+
+struct Connected : public Event<EventType::Connected>
 {
 	uint16_t player_id;
 
@@ -46,7 +62,7 @@ struct Connected
 	}
 };
 
-struct Disconnected
+struct Disconnected : public Event<EventType::Disconnected>
 {
 	enum Reason
 	{
@@ -64,7 +80,7 @@ struct Disconnected
 	}
 };
 
-struct Message
+struct Message : public Event<EventType::Message>
 {
 	uint16_t player_id;
 	std::basic_string<uint32_t, std::char_traits<uint32_t>, std::allocator<uint32_t>> message;
@@ -76,7 +92,7 @@ struct Message
 	}
 };
 
-struct AddGameObject
+struct AddGameObject : public Event<EventType::AddGameObject>
 {
 	float position_x;
 	float position_y;
@@ -92,15 +108,7 @@ struct AddGameObject
 	}
 };
 
-struct RemoveGameObjectsNearMouse // internal
-{
-	float position_x;
-	float position_y;
-	float radius;
-	uint16_t player_id;
-};
-
-struct RemoveGameObject
+struct RemoveGameObject : public Event<EventType::RemoveGameObject>
 {
 	uint16_t player_id;
 	uint16_t object_id;
@@ -112,32 +120,37 @@ struct RemoveGameObject
 	}
 };
 
-struct RemovePlayerGameObjects
+struct RemoveGameObjectsNearMouse : public Event<>
 {
+	float position_x;
+	float position_y;
+	float radius;
 	uint16_t player_id;
-
-	template<class Serializer>
-	void operator()(Serializer& serializer)
-	{
-		serializer(player_id);
-	}
 };
 
-struct GameObjectSync
+struct RemovePlayerGameObjects : public Event<>
 {
-	size_t object_count;
+	uint16_t player_id;
+};
+
+struct GameObjectSyncRequest : public Event<>
+{
+	uint32_t sync_id;
+};
+
+struct GameObjectSync : public Event<EventType::GameObjectSync>
+{
+	uint32_t sync_id;
+	uint32_t object_count;
 	GameObjectState object_states[MAX_GAME_OBJECTS_PER_SYNC];
 
 	template<class Serializer>
 	void operator()(Serializer& serializer)
 	{
+		serializer(sync_id);
 		serializer(object_count);
 
-		for (size_t i = 0; i < object_count; ++i)
+		for (uint32_t i = 0; i < object_count; ++i)
 			serializer(object_states[i]);
 	}
-};
-
-struct GameObjectSyncRequest // internal
-{
 };

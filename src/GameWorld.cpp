@@ -19,16 +19,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <cstring>
 #include <cmath>
 #include <stdexcept>
-#include "Application.hpp"
 #include "GameWorld.hpp"
-#include "GameObject.hpp"
-#include "GameWindow.hpp"
 
 static constexpr double PI = 3.14159265358979323846;
 
-GameWorld::GameWorld(Application* app) :
+GameWorld::GameWorld(IApplication* app) :
 	m_app(app),
-	m_world(b2Vec2(0.f, 0.f))
+	m_world(b2Vec2(0.f, 0.f)),
+	m_last_sync_id(0)
 {
 	setLevelBounds(RESOLUTION_WIDTH, RESOLUTION_HEIGHT);
 
@@ -39,7 +37,7 @@ GameWorld::~GameWorld()
 {
 }
 
-void GameWorld::render(GameWindow& window) const
+void GameWorld::render(IGameObjectRenderer* window) const
 {
 	std::lock_guard<std::mutex> guard(m_lock);
 
@@ -50,7 +48,7 @@ void GameWorld::render(GameWindow& window) const
 			continue;
 
 		b2Vec2 pos = body->GetPosition();
-		window.drawGameObject(pos.x, pos.y, obj->radius, obj->player_id);
+		window->renderGameObject(pos.x, pos.y, obj->radius, obj->player_id);
 	}
 }
 
@@ -86,7 +84,7 @@ void GameWorld::operator()()
 		}
 	}
 
-	m_app->getGameWindow()(this);
+	m_app->handle(this);
 }
 
 void GameWorld::operator()(AddGameObject e)
@@ -120,7 +118,10 @@ void GameWorld::operator()(RemoveGameObjectsNearMouse e)
 
 			if (obj->player_id == e.player_id && (mouse_dist < e.radius || mouse_dist < obj->radius))
 			{
-				removeGameObject(obj->player_id, obj->object_id, true);
+				RemoveGameObject _e;
+				_e.player_id = obj->player_id;
+				_e.object_id = obj->object_id;
+				m_app->handle(_e, EventSource::GameWorld);
 			}
 		}
 
@@ -160,17 +161,24 @@ void GameWorld::operator()(GameObjectSync e)
 {
 	std::lock_guard<std::mutex> guard(m_lock);
 
+	if (m_last_sync_id != e.sync_id)
+	{
+		removeObsoleteGameObjects(m_last_sync_id);
+		m_last_sync_id = e.sync_id;
+	}
+
 	for (size_t i = 0; i < e.object_count; ++i)
 	{
-		sync(e.object_states[i]);
+		sync(e.object_states[i], e.sync_id);
 	}
 }
 
-void GameWorld::operator()(GameObjectSyncRequest)
+void GameWorld::operator()(GameObjectSyncRequest e)
 {
 	std::lock_guard<std::mutex> guard(m_lock);
 
 	GameObjectSync sync;
+	sync.sync_id = e.sync_id;
 	sync.object_count = 0;
 
 	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
@@ -183,14 +191,14 @@ void GameWorld::operator()(GameObjectSyncRequest)
 
 		if (sync.object_count == MAX_GAME_OBJECTS_PER_SYNC)
 		{
-			m_app->getNetwork()(sync);
+			m_app->handle(sync, EventSource::GameWorld);
 			sync.object_count = 0; // reset counter to refill the struct
 		}
 	}
 
 	if (sync.object_count > 0)
 	{
-		m_app->getNetwork()(sync);
+		m_app->handle(sync, EventSource::GameWorld);
 	}
 }
 
@@ -248,12 +256,13 @@ bool GameWorld::findNewObjectID(uint16_t player_id, uint16_t& object_id)
 	return true;
 }
 
-void GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id)
+void GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id, uint32_t sync_id)
 {
 	GameObject* obj = new GameObject();
 	obj->player_id = e.player_id;
 	obj->object_id = object_id;
 	obj->radius = e.radius;
+	obj->last_sync_id = sync_id;
 
 	m_obj_db[e.player_id][object_id] = obj;
 	m_obj_slots[e.player_id].set(object_id);
@@ -281,7 +290,7 @@ void GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id)
 	body->SetLinearVelocity(b2Vec2(e.velocity_x, e.velocity_y));
 }
 
-void GameWorld::removeGameObject(uint16_t player_id, uint16_t object_id, bool notify_server)
+void GameWorld::removeGameObject(uint16_t player_id, uint16_t object_id)
 {
 	if (player_id >= MAX_PLAYERS || object_id >= MAX_GAME_OBJECTS_PER_PLAYER)
 		throw std::runtime_error("ID error");
@@ -295,17 +304,26 @@ void GameWorld::removeGameObject(uint16_t player_id, uint16_t object_id, bool no
 
 	m_world.DestroyBody(obj->body);
 	delete obj;
-
-	if (notify_server)
-	{
-		RemoveGameObject e;
-		e.player_id = player_id;
-		e.object_id = object_id;
-		m_app->getNetwork()(e);
-	}
 }
 
-void GameWorld::sync(GameObjectState& state)
+void GameWorld::removeObsoleteGameObjects(uint32_t sync_id)
+{
+	for (b2Body* body = m_world.GetBodyList(); body != 0; )
+	{
+		b2Body* next_body = body->GetNext();
+
+		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
+		if (obj != 0 && obj->last_sync_id != sync_id)
+		{
+			removeGameObject(obj->player_id, obj->object_id);
+		}
+
+		body = next_body;
+	}
+
+}
+
+void GameWorld::sync(GameObjectState& state, uint32_t sync_id)
 {
 	if (state.player_id >= MAX_PLAYERS || state.object_id >= MAX_GAME_OBJECTS_PER_PLAYER)
 		throw std::runtime_error("Sync ID error");
@@ -314,6 +332,7 @@ void GameWorld::sync(GameObjectState& state)
 	if (obj)
 	{
 		state.apply(obj->body);
+		obj->last_sync_id = sync_id;
 	}
 	else
 	{
@@ -325,6 +344,6 @@ void GameWorld::sync(GameObjectState& state)
 		e.velocity_x = state.velocity_x;
 		e.velocity_y = state.velocity_y;
 
-		addGameObject(e, state.object_id);
+		addGameObject(e, state.object_id, sync_id);
 	}
 }
