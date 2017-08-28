@@ -24,20 +24,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <Box2D/Box2D.h>
 #include <raz/bitset.hpp>
 #include <raz/timer.hpp>
-#include "Events.hpp"
-#include "Settings.hpp"
+#include "IApplication.hpp"
 
-class Application;
-class GameWindow;
-struct GameObject;
-struct GameObjectState;
-
-class GameWorld
+class GameWorld : public IGameObjectRenderInvoker
 {
 public:
-	GameWorld(Application* app);
+	GameWorld(IApplication* app);
 	~GameWorld();
-	void render(GameWindow& window) const;
+	virtual void render(IGameObjectRenderer* window) const;
 	void operator()(); // loop
 	void operator()(AddGameObject e);
 	void operator()(RemoveGameObjectsNearMouse e);
@@ -49,15 +43,17 @@ public:
 
 private:
 	mutable std::mutex m_lock;
-	Application* m_app;
+	IApplication* m_app;
 	raz::Timer m_timer;
 	b2World m_world;
 	GameObject* m_obj_db[MAX_PLAYERS][MAX_GAME_OBJECTS_PER_PLAYER];
 	raz::Bitset<MAX_GAME_OBJECTS_PER_PLAYER> m_obj_slots[MAX_PLAYERS];
+	uint32_t m_last_sync_id;
 
 	void setLevelBounds(float width, float height);
 	bool findNewObjectID(uint16_t player_id, uint16_t& object_id);
-	void addGameObject(const AddGameObject& e, uint16_t object_id);
-	void removeGameObject(uint16_t player_id, uint16_t object_id, bool notify_server = false);
-	void sync(GameObjectState& state);
+	void addGameObject(const AddGameObject& e, uint16_t object_id, uint32_t sync_id = 0);
+	void removeGameObject(uint16_t player_id, uint16_t object_id);
+	void removeObsoleteGameObjects(uint32_t sync_id);
+	void sync(GameObjectState& state, uint32_t sync_id);
 };

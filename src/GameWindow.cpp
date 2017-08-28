@@ -16,10 +16,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include "Application.hpp"
 #include "GameWindow.hpp"
-#include "GameWorld.hpp"
-#include "Settings.hpp"
 #include <ShlObj.h>
 
 /*
@@ -60,7 +57,7 @@ static sf::View getLetterboxView(sf::View view, int windowWidth, int windowHeigh
 	return view;
 }
 
-GameWindow::GameWindow(Application* app, uint16_t player_id) :
+GameWindow::GameWindow(IApplication* app, uint16_t player_id) :
 	m_app(app),
 	m_player_id(player_id),
 	m_mouse_radius(6.f),
@@ -85,13 +82,10 @@ GameWindow::GameWindow(Application* app, uint16_t player_id) :
 	for (int i = 0; i < MAX_PLAYERS; ++i)
 		m_player_colors[i] = color_table[i];
 
-	raz::Color player_color = m_player_colors[player_id];
-
 	m_game_object_shape.setOutlineThickness(2.f);
 
 	m_mouse_shape.setRadius(m_mouse_radius);
 	m_mouse_shape.setOutlineThickness(2.f);
-	m_mouse_shape.setOutlineColor(sf::Color(player_color.r, player_color.g, player_color.b, 6));
 	m_mouse_shape.setFillColor(sf::Color::Transparent);
 
 	m_clear_rect.setSize(sf::Vector2f(RESOLUTION_WIDTH, RESOLUTION_HEIGHT));
@@ -111,16 +105,17 @@ GameWindow::GameWindow(Application* app, uint16_t player_id) :
 	m_input.setFont(m_font);
 	m_input.setOutlineColor(sf::Color::White);
 	m_input.setOutlineThickness(1.f);
-	m_input.setFillColor(sf::Color(player_color.r, player_color.g, player_color.b));
 	m_input.setPosition(10, RESOLUTION_HEIGHT - MESSAGE_CHAR_SIZE - 10);
 	m_input.setCharacterSize(MESSAGE_CHAR_SIZE);
+
+	setPlayer(player_id);
 }
 
 GameWindow::~GameWindow()
 {
 }
 
-void GameWindow::drawGameObject(float x, float y, float r, uint16_t player_id)
+void GameWindow::renderGameObject(float x, float y, float r, uint16_t player_id)
 {
 	raz::Color color = m_player_colors[player_id];
 	m_game_object_shape.setOutlineColor(sf::Color(color.r, color.g, color.b));
@@ -172,7 +167,7 @@ void GameWindow::operator()()
 					Message e;
 					e.player_id = m_player_id;
 					e.message = m_input.getString().getData();
-					m_app->getNetwork()(e);
+					m_app->handle(e, EventSource::GameWindow);
 				}
 				m_input.setString({});
 				break;
@@ -213,8 +208,7 @@ void GameWindow::operator()()
 				e.velocity_x = pos.x - last_pos.x;
 				e.velocity_y = pos.y - last_pos.y;
 				e.player_id = m_player_id;
-				m_app->getGameWorld()(e);
-				m_app->getNetwork()(e);
+				m_app->handle(e, EventSource::GameWindow);
 			}
 			else if (event.mouseButton.button == sf::Mouse::Right)
 			{
@@ -223,7 +217,7 @@ void GameWindow::operator()()
 				e.position_y = pos.y;
 				e.radius = m_mouse_radius;
 				e.player_id = m_player_id;
-				m_app->getGameWorld()(e);
+				m_app->handle(e, EventSource::GameWindow);
 			}
 			break;
 		}
@@ -274,12 +268,22 @@ void GameWindow::operator()()
 	m_window.display();
 }
 
-void GameWindow::operator()(GameWorld* world)
+void GameWindow::operator()(IGameObjectRenderInvoker* world)
 {
-	world->render(*this);
+	world->render(this);
 }
 
 void GameWindow::operator()(Message e)
 {
 	m_msg_queue.push(e);
+}
+
+void GameWindow::setPlayer(uint16_t player_id)
+{
+	m_player_id = player_id;
+
+	raz::Color player_color = m_player_colors[m_player_id];
+
+	m_mouse_shape.setOutlineColor(sf::Color(player_color.r, player_color.g, player_color.b, 6));
+	m_input.setFillColor(sf::Color(player_color.r, player_color.g, player_color.b));
 }

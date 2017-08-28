@@ -147,6 +147,7 @@
     <ClInclude Include="src\GameObject.hpp" />
     <ClInclude Include="src\GameWindow.hpp" />
     <ClInclude Include="src\GameWorld.hpp" />
+    <ClInclude Include="src\IApplication.hpp" />
     <ClInclude Include="src\Network.hpp" />
     <ClInclude Include="src\Settings.hpp" />
     <ClInclude Include="src\thirdparty\Box2D\Box2D.h" />

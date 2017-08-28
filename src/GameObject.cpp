@@ -39,7 +39,7 @@ void GameObjectState::apply(b2Body* body)
 	b2Vec2 position(position_x, position_y);
 	b2Vec2 velocity(velocity_x, velocity_y);
 
-	if ((position - body->GetPosition()).LengthSquared() > velocity.LengthSquared())
+	if ((position - body->GetPosition()).LengthSquared() > velocity.LengthSquared() * 0.25f)
 		body->SetTransform(position, 0.f);
 
 	body->SetLinearVelocity(velocity);

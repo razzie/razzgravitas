@@ -17,6 +17,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
 #include "Application.hpp"
+#include <cstdio>
 #include <Windows.h>
 
 int CALLBACK WinMain(
@@ -25,5 +26,5 @@ int CALLBACK WinMain(
 	_In_ LPSTR     lpCmdLine,
 	_In_ int       nCmdShow)
 {
-	return Application(lpCmdLine).run();
+	return Application::run(__argc, __argv);
 }

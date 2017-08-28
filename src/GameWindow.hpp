@@ -23,24 +23,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <SFML/Graphics.hpp>
 #include <raz/color.hpp>
 #include <raz/timer.hpp>
-#include "Settings.hpp"
-#include "Events.hpp"
+#include "IApplication.hpp"
 
-class Application;
-class GameWorld;
-
-class GameWindow
+class GameWindow : public IGameObjectRenderer
 {
 public:
-	GameWindow(Application* app, uint16_t player_id);
+	GameWindow(IApplication* app, uint16_t player_id);
 	~GameWindow();
-	void drawGameObject(float x, float y, float r, uint16_t player_id);
+	virtual void renderGameObject(float x, float y, float r, uint16_t player_id);
 	void operator()(); // loop
-	void operator()(GameWorld* world);
+	void operator()(IGameObjectRenderInvoker* world);
 	void operator()(Message e);
 
 private:
-	Application* m_app;
+	IApplication* m_app;
 	sf::RenderWindow m_window;
 	sf::View m_view;
 	sf::CircleShape m_game_object_shape;
@@ -57,4 +53,6 @@ private:
 	int m_mouse_drag_x;
 	int m_mouse_drag_y;
 	bool m_mouse_down;
+
+	void setPlayer(uint16_t player_id);
 };
