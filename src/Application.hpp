@@ -57,8 +57,9 @@ private:
 	void setGameMode(GameMode mode);
 	bool handleCommand(const std::string& cmd);
 
-	std::string m_cmdline;
 	GameMode m_mode;
+	std::string m_cmdline;
+	std::string m_exit_msg;
 	std::promise<int> m_exit_code;
 	raz::Thread<GameWindow> m_window;
 	raz::Thread<GameWorld> m_world;

@@ -52,6 +52,11 @@ int Application::run()
 	m_world.stop();
 	m_network.stop();
 
+	if (!m_exit_msg.empty())
+	{
+		MessageBoxA(NULL, m_exit_msg.c_str(), "Exit message", MB_OK | MB_SYSTEMMODAL);
+	}
+
 	return exit_code;
 }
 
@@ -113,7 +118,7 @@ void Application::exit(int code, const char* msg)
 {
 	if (msg)
 	{
-		MessageBoxA(NULL, msg, "Exit message", MB_OK);
+		m_exit_msg = msg;
 	}
 
 	m_exit_code.set_value(code);
