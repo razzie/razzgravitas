@@ -38,7 +38,7 @@ enum NetworkMode
 class Network
 {
 public:
-	Network(IApplication* app, NetworkMode mode, const char* host = nullptr);
+	Network(IApplication* app, NetworkMode mode, const char* cmdline = nullptr);
 	~Network();
 	void operator()(); // loop
 	void operator()(Message e);
@@ -64,6 +64,8 @@ private:
 	Data m_data;
 	std::vector<Client> m_clients;
 
+	void startClient(const char* cmdline);
+	void startServer(const char* cmdline);
 	void updateClient();
 	void updateServer();
 	bool handlePacket(Packet& packet, const Player* sender);
