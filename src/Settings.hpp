@@ -18,19 +18,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
+// core app settings
 #define APP_NAME "RazzGravitas"
-
 #define RESOLUTION_WIDTH 800
 #define RESOLUTION_HEIGHT 600
 #define GRAVITY 10000.f
-
-#define GAME_PORT 12345
-
 #define MAX_PLAYERS 12
 #define MAX_GAME_OBJECTS_PER_PLAYER 32
 
-#define MAX_GAME_OBJECTS_PER_SYNC 16
-#define GAME_SYNC_TIMEOUT 100
-
+// chat settings
 #define MESSAGE_TIMEOUT 2000
 #define MESSAGE_CHAR_SIZE 16
+
+// network settings
+#define GAME_PORT 12345
+#define MAX_GAME_OBJECTS_PER_SYNC 16
+#define GAME_SYNC_TIMEOUT 100

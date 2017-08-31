@@ -87,7 +87,7 @@ void Application::setGameMode(GameMode mode)
 	case GameMode::Host:
 		m_window.start(this, m_player_mgr.addLocalPlayer(0)->player_id);
 		m_world.start(this);
-		m_network.start(this, NetworkMode::Server, nullptr);
+		m_network.start(this, NetworkMode::Server, m_cmdline.empty() ? nullptr : m_cmdline.c_str());
 		break;
 
 	case GameMode::Client:
@@ -104,8 +104,15 @@ void Application::setGameMode(GameMode mode)
 
 bool Application::handleCommand(const std::string& cmd)
 {
-	if (cmd.compare("/host") == 0)
+	if (cmd.compare(0, 6, "/host ") == 0 && cmd.size() > 9)
 	{
+		m_cmdline = &cmd[6];
+		std::thread(&Application::setGameMode, this, GameMode::Host).detach(); //setGameMode(GameMode::Host);
+		return true;
+	}
+	else if (cmd.compare("/host") == 0)
+	{
+		m_cmdline.clear();
 		std::thread(&Application::setGameMode, this, GameMode::Host).detach(); //setGameMode(GameMode::Host);
 		return true;
 	}

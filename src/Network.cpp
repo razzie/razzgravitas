@@ -21,48 +21,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "Application.hpp"
 #include "Network.hpp"
 
-Network::Network(IApplication* app, NetworkMode mode, const char* host) :
+Network::Network(IApplication* app, NetworkMode mode, const char* cmdline) :
 	m_app(app),
 	m_mode(NetworkMode::Disabled),
 	m_sync_id_gen((uint64_t)std::time(NULL))
 {
 	if (mode == NetworkMode::Server)
-	{
-		if (m_server.getBackend().open(GAME_PORT))
-		{
-			m_mode = NetworkMode::Server;
-		}
-		else
-		{
-			m_app->exit(-1, "Cannot host game");
-			return;
-		}
-	}
+		startServer(cmdline);
 	else if (mode == NetworkMode::Client)
-	{
-		if (m_client.getBackend().open(host, GAME_PORT))
-		{
-			m_mode = NetworkMode::Client;
-
-			Hello e;
-			e.checksum = Hello::calculate();
-
-			Packet packet;
-			packet.setType((raz::PacketType)EventType::Hello);
-			packet.setMode(raz::SerializationMode::SERIALIZE);
-			packet(e);
-			m_client.send(packet);
-		}
-		else
-		{
-			m_app->exit(-1, "Cannot connect to server");
-			return;
-		}
-	}
+		startClient(cmdline);
 	else
-	{
 		throw raz::ThreadStop{};
-	}
 }
 
 Network::~Network()
@@ -188,6 +157,52 @@ void Network::operator()(SwitchPlayer e)
 void Network::operator()(std::exception& e)
 {
 	m_app->exit(-1, e.what());
+}
+
+void Network::startClient(const char* cmdline)
+{
+	char host[256];
+	std::memcpy(host, cmdline, strlen(cmdline) + 1);
+
+	uint16_t port = GAME_PORT;
+	char* port_str = strchr(host, ':');
+	if (port_str)
+	{
+		*port_str = '\0';
+		port = (uint16_t)std::stoul(++port_str);
+	}
+
+	if (m_client.getBackend().open(host, port))
+	{
+		m_mode = NetworkMode::Client;
+
+		Hello e;
+		e.checksum = Hello::calculate();
+
+		Packet packet;
+		packet.setType((raz::PacketType)EventType::Hello);
+		packet.setMode(raz::SerializationMode::SERIALIZE);
+		packet(e);
+		m_client.send(packet);
+	}
+	else
+	{
+		m_app->exit(-1, "Cannot connect to server");
+	}
+}
+
+void Network::startServer(const char* cmdline)
+{
+	uint16_t port = cmdline ? (uint16_t)std::stoul(cmdline) : GAME_PORT;
+
+	if (m_server.getBackend().open(port))
+	{
+		m_mode = NetworkMode::Server;
+	}
+	else
+	{
+		m_app->exit(-1, "Cannot host game");
+	}
 }
 
 void Network::updateClient()
