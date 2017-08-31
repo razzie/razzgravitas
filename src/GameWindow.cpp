@@ -68,7 +68,21 @@ GameWindow::GameWindow(IApplication* app, uint16_t player_id) :
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 4;
 
-	m_window.create(sf::VideoMode(RESOLUTION_WIDTH, RESOLUTION_HEIGHT), "RazzGravitas", (sf::Style::Resize + sf::Style::Close), settings);
+	std::string title = "RazzGravitas";
+	switch (m_app->getGameMode())
+	{
+	case GameMode::SingplePlay:
+		title += " (SinglePlay)";
+		break;
+	case GameMode::Host:
+		title += " (Host)";
+		break;
+	case GameMode::Client:
+		title += " (Client)";
+		break;
+	}
+
+	m_window.create(sf::VideoMode(RESOLUTION_WIDTH, RESOLUTION_HEIGHT), title.c_str(), (sf::Style::Resize + sf::Style::Close), settings);
 	m_window.setVerticalSyncEnabled(true);
 	m_window.setKeyRepeatEnabled(false);
 	m_window.clear(sf::Color::White);

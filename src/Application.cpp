@@ -40,6 +40,11 @@ Application::~Application()
 {
 }
 
+GameMode Application::getGameMode() const
+{
+	return m_mode;
+}
+
 int Application::run()
 {
 	auto exit_code_future = m_exit_code.get_future();

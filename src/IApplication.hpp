@@ -23,10 +23,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 class PlayerManager;
 
+enum class GameMode
+{
+	SingplePlay,
+	Host,
+	Client
+};
+
 class IApplication
 {
 public:
 	// I don't need virtual desctructor
+	virtual GameMode getGameMode() const = 0;
 	virtual PlayerManager* getPlayerManager() = 0;
 	virtual void exit(int exit_code, const char* msg = nullptr) = 0;
 	virtual void handle(Connected e, EventSource src) = 0;
