@@ -171,6 +171,9 @@
     <ClCompile Include="src\Network.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\PlayerManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\thirdparty\Box2D\Collision\Shapes\b2ChainShape.h">
@@ -564,6 +567,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\IApplication.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PlayerManager.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -18,9 +18,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
-#include <string>
 #include <exception>
-#include <raz/bitset.hpp>
+#include <vector>
 #include <raz/network.hpp>
 #include <raz/networkbackend.hpp>
 #include <raz/random.hpp>
@@ -44,6 +43,7 @@ public:
 	void operator()(AddGameObject e);
 	void operator()(RemoveGameObject e);
 	void operator()(GameObjectSync e);
+	void operator()(SwitchPlayer e);
 	void operator()(std::exception& e);
 
 private:
@@ -60,8 +60,7 @@ private:
 	raz::Timer m_timer;
 	raz::Random m_sync_id_gen;
 	Data m_data;
-	Client m_players[MAX_PLAYERS - 1];
-	raz::Bitset<MAX_PLAYERS - 1> m_player_slots;
+	std::vector<Client> m_clients;
 
 	void updateClient();
 	void updateServer();

@@ -35,9 +35,9 @@ struct GameObjectState
 {
 	uint16_t player_id;
 	uint16_t object_id;
+	float radius;
 	float position_x;
 	float position_y;
-	float radius;
 	float velocity_x;
 	float velocity_y;
 
@@ -47,7 +47,7 @@ struct GameObjectState
 	template<class Serializer>
 	void operator()(Serializer& serializer)
 	{
-		serializer(player_id)(object_id)(position_x)(position_y)(radius)(velocity_x)(velocity_y);
+		serializer(player_id)(object_id)(radius)(position_x)(position_y)(velocity_x)(velocity_y);
 	}
 };
 

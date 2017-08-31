@@ -39,6 +39,7 @@ public:
 	void operator()(RemovePlayerGameObjects e);
 	void operator()(GameObjectSync e);
 	void operator()(GameObjectSyncRequest);
+	void operator()(SwitchPlayer e);
 	void operator()(std::exception& e);
 
 private:

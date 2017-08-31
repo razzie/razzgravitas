@@ -202,6 +202,27 @@ void GameWorld::operator()(GameObjectSyncRequest e)
 	}
 }
 
+void GameWorld::operator()(SwitchPlayer e)
+{
+	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
+	{
+		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
+		if (obj != 0 && obj->player_id == e.player_id)
+		{
+			m_obj_db[e.player_id][obj->object_id] = nullptr;
+			m_obj_slots[e.player_id].unset(obj->object_id);
+
+			if (m_obj_db[e.new_player_id][obj->object_id] != nullptr)
+				throw std::runtime_error("SwitchUser error");
+
+			m_obj_db[e.new_player_id][obj->object_id] = obj;
+			m_obj_slots[e.new_player_id].set(obj->object_id);
+
+			obj->player_id = e.new_player_id;
+		}
+	}
+}
+
 void GameWorld::operator()(std::exception& e)
 {
 	m_app->exit(-1, e.what());

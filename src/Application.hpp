@@ -24,6 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "GameWindow.hpp"
 #include "GameWorld.hpp"
 #include "Network.hpp"
+#include "PlayerManager.hpp"
 #include "IApplication.hpp"
 
 enum class GameMode
@@ -39,9 +40,11 @@ public:
 	static int run(int argc, char** argv);
 
 	~Application();
+	virtual PlayerManager* getPlayerManager();
 	virtual void exit(int exit_code, const char* msg = nullptr);
 	virtual void handle(Connected e, EventSource src);
 	virtual void handle(Disconnected e, EventSource src);
+	virtual void handle(SwitchPlayer e, EventSource src);
 	virtual void handle(Message e, EventSource src);
 	virtual void handle(AddGameObject e, EventSource src);
 	virtual void handle(RemoveGameObjectsNearMouse e, EventSource src);
@@ -58,6 +61,7 @@ private:
 	bool handleCommand(const std::string& cmd);
 
 	GameMode m_mode;
+	PlayerManager m_player_mgr;
 	std::string m_cmdline;
 	std::string m_exit_msg;
 	std::promise<int> m_exit_code;

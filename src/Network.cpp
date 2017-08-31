@@ -58,9 +58,9 @@ Network::~Network()
 		packet.setMode(raz::SerializationMode::SERIALIZE);
 		packet(e);
 
-		for (auto slot : m_player_slots.truebits())
+		for (auto& client : m_clients)
 		{
-			m_server.send(m_players[slot], packet);
+			m_server.send(client, packet);
 		}
 
 		m_server.getBackend().close();
@@ -88,9 +88,9 @@ void Network::operator()(Message e)
 
 	if (m_mode == NetworkMode::Server)
 	{
-		for (auto player_slot : m_player_slots.truebits())
+		for (auto& client : m_clients)
 		{
-			m_server.send(m_players[player_slot], packet);
+			m_server.send(client, packet);
 		}
 	}
 	else
@@ -134,10 +134,35 @@ void Network::operator()(GameObjectSync e)
 		packet.setMode(raz::SerializationMode::SERIALIZE);
 		packet(e);
 
-		for (auto player_slot : m_player_slots.truebits())
+		for (auto& client : m_clients)
 		{
-			m_server.send(m_players[player_slot], packet);
+			m_server.send(client, packet);
 		}
+	}
+}
+
+void Network::operator()(SwitchPlayer e)
+{
+	if (m_mode == NetworkMode::Server)
+	{
+		Packet packet;
+		packet.setType((raz::PacketType)EventType::SwitchPlayer);
+		packet.setMode(raz::SerializationMode::SERIALIZE);
+		packet(e);
+
+		for (auto& client : m_clients)
+		{
+			m_server.send(client, packet);
+		}
+	}
+	else if (m_mode == NetworkMode::Client)
+	{
+		Packet packet;
+		packet.setType((raz::PacketType)EventType::SwitchPlayer);
+		packet.setMode(raz::SerializationMode::SERIALIZE);
+		packet(e);
+
+		m_client.send(packet);
 	}
 }
 
@@ -188,6 +213,7 @@ bool Network::handlePacket(Packet& packet)
 {
 	return (tryHandle<Connected>(packet)
 		|| tryHandle<Disconnected>(packet)
+		|| tryHandle<SwitchPlayer>(packet)
 		|| tryHandle<Message>(packet)
 		|| tryHandle<AddGameObject>(packet)
 		|| tryHandle<RemoveGameObject>(packet)
@@ -196,10 +222,23 @@ bool Network::handlePacket(Packet& packet)
 
 void Network::handleConnect(Client& client)
 {
-	auto player_slots = m_player_slots.falsebits();
-	auto slot = player_slots.begin();
+	const Player* player = m_app->getPlayerManager()->addPlayer();
+	if (player)
+	{
+		player->data = (int)client.socket;
+		m_clients.push_back(client);
 
-	if (slot == player_slots.end())
+		Connected e;
+		e.player_id = player->player_id;
+
+		Packet packet;
+		packet.setType((raz::PacketType)EventType::Connected);
+		packet.setMode(raz::SerializationMode::SERIALIZE);
+		packet(e);
+
+		m_server.send(client, packet);
+	}
+	else
 	{
 		Disconnected e;
 		e.reason = Disconnected::ServerClosed;
@@ -212,36 +251,25 @@ void Network::handleConnect(Client& client)
 		m_server.send(client, packet);
 		m_server.getBackend().close(client);
 	}
-	else
-	{
-		m_players[*slot] = client;
-		m_player_slots.set(*slot);
-
-		Connected e;
-		e.player_id = (uint16_t)(*slot + 1); // player 0 is this instance
-
-		Packet packet;
-		packet.setType((raz::PacketType)EventType::Connected);
-		packet.setMode(raz::SerializationMode::SERIALIZE);
-		packet(e);
-
-		m_server.send(client, packet);
-	}
 }
 
 void Network::handleDisconnect(Client& client)
 {
-	for (size_t slot : m_player_slots.truebits())
+	const Player* player = m_app->getPlayerManager()->findPlayer(client.socket);
+	if (player)
 	{
-		if (m_players[slot].socket == client.socket)
+		RemovePlayerGameObjects e;
+		e.player_id = player->player_id;
+		m_app->handle(e, EventSource::Network);
+
+		for (auto it = m_clients.begin(), end = m_clients.end(); it != end; ++it)
 		{
-			m_player_slots.unset(slot);
-
-			RemovePlayerGameObjects e;
-			e.player_id = (uint16_t)(slot + 1); // player 0 is this instance
-			m_app->handle(e, EventSource::Network);
-
-			return;
+			if (player->data == (int)it->socket)
+			{
+				m_clients.erase(it);
+				return;
+			}
 		}
+		m_app->getPlayerManager()->removePlayer(player->player_id);
 	}
 }

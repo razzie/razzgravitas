@@ -278,6 +278,11 @@ void GameWindow::operator()(Message e)
 	m_msg_queue.push(e);
 }
 
+void GameWindow::operator()(SwitchPlayer e)
+{
+	setPlayer(e.new_player_id);
+}
+
 void GameWindow::setPlayer(uint16_t player_id)
 {
 	m_player_id = player_id;

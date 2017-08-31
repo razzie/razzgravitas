@@ -29,6 +29,7 @@ enum class EventType : uint32_t
 	Unknown,
 	Connected         = (uint32_t)raz::hash("Connected"),
 	Disconnected      = (uint32_t)raz::hash("Disconnected"),
+	SwitchPlayer      = (uint32_t)raz::hash("SwitchPlayer"),
 	Message           = (uint32_t)raz::hash("Message"),
 	AddGameObject     = (uint32_t)raz::hash("AddGameObject"),
 	RemoveGameObject  = (uint32_t)raz::hash("RemoveGameObject"),
@@ -77,6 +78,18 @@ struct Disconnected : public Event<EventType::Disconnected>
 	{
 		int& _reason = *(int*)(&reason);
 		serializer(_reason);
+	}
+};
+
+struct SwitchPlayer : public Event<EventType::SwitchPlayer>
+{
+	uint16_t player_id;
+	uint16_t new_player_id;
+
+	template<class Serializer>
+	void operator()(Serializer& serializer)
+	{
+		serializer(player_id)(new_player_id);
 	}
 };
 

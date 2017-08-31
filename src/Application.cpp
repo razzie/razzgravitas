@@ -70,15 +70,17 @@ void Application::setGameMode(GameMode mode)
 	m_world.clear();
 	m_network.clear();
 
+	m_player_mgr.reset();
+
 	switch (mode)
 	{
 	case GameMode::SingplePlay:
-		m_window.start(this, 0);
+		m_window.start(this, m_player_mgr.addLocalPlayer(0)->player_id);
 		m_world.start(this);
 		break;
 
 	case GameMode::Host:
-		m_window.start(this, 0);
+		m_window.start(this, m_player_mgr.addLocalPlayer(0)->player_id);
 		m_world.start(this);
 		m_network.start(this, NetworkMode::Server, nullptr);
 		break;
@@ -99,19 +101,30 @@ bool Application::handleCommand(const std::string& cmd)
 {
 	if (cmd.compare("/host") == 0)
 	{
-		std::thread(&Application::setGameMode, this, GameMode::Host).detach();
-		//setGameMode(GameMode::Host);
+		std::thread(&Application::setGameMode, this, GameMode::Host).detach(); //setGameMode(GameMode::Host);
 		return true;
 	}
-	else if (cmd.compare(0, 9, "/connect ") == 0)
+	else if (cmd.compare(0, 9, "/connect ") == 0 && cmd.size() > 9)
 	{
 		m_cmdline = &cmd[9];
-		std::thread(&Application::setGameMode, this, GameMode::Client).detach();
-		//setGameMode(GameMode::Client);
+		std::thread(&Application::setGameMode, this, GameMode::Client).detach(); //setGameMode(GameMode::Client);
+		return true;
+	}
+	else if (cmd.compare(0, 8, "/player ") == 0 && cmd.size() > 8)
+	{
+		SwitchPlayer e;
+		e.player_id = m_player_mgr.getLocalPlayer()->player_id;
+		e.new_player_id = (uint16_t)(std::stoul(&cmd[8]) - 1);
+		handle(e, EventSource::GameWindow);
 		return true;
 	}
 
 	return false;
+}
+
+PlayerManager* Application::getPlayerManager()
+{
+	return &m_player_mgr;
 }
 
 void Application::exit(int code, const char* msg)
@@ -128,6 +141,7 @@ void Application::handle(Connected e, EventSource src)
 {
 	if (m_mode == GameMode::Client)
 	{
+		m_player_mgr.addLocalPlayer(e.player_id);
 		m_window.start(this, e.player_id);
 	}
 }
@@ -150,6 +164,38 @@ void Application::handle(Disconnected e, EventSource src)
 		}
 
 		exit(-1, msg);
+	}
+}
+
+void Application::handle(SwitchPlayer e, EventSource src)
+{
+	if (src == EventSource::GameWindow) // command
+	{
+		if (m_mode == GameMode::Client)
+		{
+			m_network(e);
+		}
+		else if (m_player_mgr.switchPlayer(e.player_id, e.new_player_id))
+		{
+			m_window(e);
+			m_world(e);
+
+			if (m_mode == GameMode::Host)
+				m_network(e);
+		}
+	}
+	else if (src == EventSource::Network)
+	{
+		if (m_player_mgr.switchPlayer(e.player_id, e.new_player_id))
+		{
+			m_world(e);
+
+			if (m_mode == GameMode::Host)
+				m_network(e);
+			else if (m_mode == GameMode::Client)
+				m_window(e);
+		}
+
 	}
 }
 
