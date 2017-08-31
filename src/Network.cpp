@@ -29,16 +29,35 @@ Network::Network(IApplication* app, NetworkMode mode, const char* host) :
 	if (mode == NetworkMode::Server)
 	{
 		if (m_server.getBackend().open(GAME_PORT))
+		{
 			m_mode = NetworkMode::Server;
+		}
 		else
+		{
 			m_app->exit(-1, "Cannot host game");
+			return;
+		}
 	}
 	else if (mode == NetworkMode::Client)
 	{
 		if (m_client.getBackend().open(host, GAME_PORT))
+		{
 			m_mode = NetworkMode::Client;
+
+			Hello e;
+			e.checksum = Hello::calculate();
+
+			Packet packet;
+			packet.setType((raz::PacketType)EventType::Hello);
+			packet.setMode(raz::SerializationMode::SERIALIZE);
+			packet(e);
+			m_client.send(packet);
+		}
 		else
+		{
 			m_app->exit(-1, "Cannot connect to server");
+			return;
+		}
 	}
 	else
 	{
@@ -183,29 +202,41 @@ void Network::updateClient()
 
 void Network::updateServer()
 {
-	m_data.packet.reset();
-	m_server.receive(m_data, GAME_SYNC_TIMEOUT);
-
-	switch (m_data.state)
+	try
 	{
-	case ClientState::CLIENT_CONNECTED:
-		handleConnect(m_data.client);
-		break;
+		m_data.packet.reset();
+		m_server.receive(m_data, GAME_SYNC_TIMEOUT);
 
-	case ClientState::CLIENT_DISCONNECTED:
-		handleDisconnect(m_data.client);
-		break;
+		switch (m_data.state)
+		{
+		case ClientState::CLIENT_CONNECTED:
+			// we will wait for Hello packet
+			break;
 
-	case ClientState::PACKET_RECEIVED:
-		m_data.packet.setMode(raz::SerializationMode::DESERIALIZE);
-		handlePacket(m_data.packet, m_app->getPlayerManager()->findPlayer(m_data.client.socket));
-		break;
+		case ClientState::CLIENT_DISCONNECTED:
+			handleDisconnect(m_data.client);
+			break;
 
-	case ClientState::UNSET:
-		GameObjectSyncRequest e;
-		e.sync_id = (uint32_t)m_sync_id_gen();
-		m_app->handle(e, EventSource::Network);
-		break;
+		case ClientState::PACKET_RECEIVED:
+			m_data.packet.setMode(raz::SerializationMode::DESERIALIZE);
+			if (const Player* player = m_app->getPlayerManager()->findPlayer(m_data.client.socket))
+				handlePacket(m_data.packet, player);
+			else
+				handleHello(m_data.client, m_data.packet);
+			break;
+
+		case ClientState::UNSET:
+			GameObjectSyncRequest e;
+			e.sync_id = (uint32_t)m_sync_id_gen();
+			m_app->handle(e, EventSource::Network);
+			break;
+		}
+	}
+	catch (raz::NetworkSocketError&)
+	{
+	}
+	catch (raz::SerializationError&)
+	{
 	}
 }
 
@@ -218,6 +249,34 @@ bool Network::handlePacket(Packet& packet, const Player* sender)
 		|| tryHandle<AddGameObject>(packet, sender)
 		|| tryHandle<RemoveGameObject>(packet, sender)
 		|| tryHandle<GameObjectSync>(packet, sender));
+}
+
+void Network::handleHello(Client& client, Packet& packet)
+{
+	if (packet.getType() == (raz::PacketType)EventType::Hello)
+	{
+		Hello e;
+		packet.setMode(raz::SerializationMode::DESERIALIZE);
+		packet(e);
+
+		if (e.checksum == Hello::calculate())
+		{
+			handleConnect(client);
+		}
+		else
+		{
+			Disconnected e;
+			e.reason = Disconnected::Compatibility;
+
+			Packet packet;
+			packet.setType((raz::PacketType)EventType::Disconnected);
+			packet.setMode(raz::SerializationMode::SERIALIZE);
+			packet(e);
+
+			m_server.send(client, packet);
+			m_server.getBackend().close(client);
+		}
+	}
 }
 
 void Network::handleConnect(Client& client)

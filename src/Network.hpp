@@ -67,6 +67,7 @@ private:
 	void updateClient();
 	void updateServer();
 	bool handlePacket(Packet& packet, const Player* sender);
+	void handleHello(Client& client, Packet& packet);
 	void handleConnect(Client& client);
 	void handleDisconnect(Client& client);
 

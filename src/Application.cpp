@@ -166,6 +166,10 @@ void Application::handle(Disconnected e, EventSource src)
 		case Disconnected::ServerFull:
 			msg = "Server full";
 			break;
+
+		case Disconnected::Compatibility:
+			msg = "This version is not compatible with the server";
+			break;
 		}
 
 		exit(-1, msg);
