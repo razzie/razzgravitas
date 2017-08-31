@@ -68,7 +68,7 @@ GameWindow::GameWindow(IApplication* app, uint16_t player_id) :
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 4;
 
-	std::string title = "RazzGravitas";
+	std::string title = APP_NAME;
 	switch (m_app->getGameMode())
 	{
 	case GameMode::SingplePlay:

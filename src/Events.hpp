@@ -27,6 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 enum class EventType : uint32_t
 {
 	Unknown,
+	Hello             = (uint32_t)raz::hash("Hello"),
 	Connected         = (uint32_t)raz::hash("Connected"),
 	Disconnected      = (uint32_t)raz::hash("Disconnected"),
 	SwitchPlayer      = (uint32_t)raz::hash("SwitchPlayer"),
@@ -52,6 +53,19 @@ struct Event
 	}
 };
 
+struct Hello : public Event<EventType::Hello>
+{
+	uint64_t checksum;
+
+	static constexpr uint64_t calculate();
+
+	template<class Serializer>
+	void operator()(Serializer& serializer)
+	{
+		serializer(checksum);
+	}
+};
+
 struct Connected : public Event<EventType::Connected>
 {
 	uint16_t player_id;
@@ -68,7 +82,8 @@ struct Disconnected : public Event<EventType::Disconnected>
 	enum Reason
 	{
 		ServerClosed,
-		ServerFull
+		ServerFull,
+		Compatibility
 	};
 
 	Reason reason;
@@ -167,3 +182,33 @@ struct GameObjectSync : public Event<EventType::GameObjectSync>
 			serializer(object_states[i]);
 	}
 };
+
+constexpr uint64_t Hello::calculate()
+{
+	return (raz::hash(APP_NAME)
+		+ (uint64_t)GRAVITY
+		+ RESOLUTION_WIDTH
+		+ RESOLUTION_HEIGHT
+		+ MAX_PLAYERS
+		+ MAX_GAME_OBJECTS_PER_PLAYER
+		+ MAX_GAME_OBJECTS_PER_SYNC
+		+ GAME_SYNC_TIMEOUT
+
+		+ (uint64_t)EventType::Hello
+		+ (uint64_t)EventType::Connected
+		+ (uint64_t)EventType::Disconnected
+		+ (uint64_t)EventType::SwitchPlayer
+		+ (uint64_t)EventType::Message
+		+ (uint64_t)EventType::AddGameObject
+		+ (uint64_t)EventType::RemoveGameObject
+		+ (uint64_t)EventType::GameObjectSync
+
+		+ sizeof(Hello)
+		+ sizeof(Connected)
+		+ sizeof(Disconnected)
+		+ sizeof(SwitchPlayer)
+		+ sizeof(Message)
+		+ sizeof(AddGameObject)
+		+ sizeof(RemoveGameObject)
+		+ sizeof(GameObjectSync));
+}
