@@ -178,7 +178,7 @@ void Network::updateClient()
 		return;
 
 	m_data.packet.setMode(raz::SerializationMode::DESERIALIZE);
-	handlePacket(m_data.packet);
+	handlePacket(m_data.packet, m_app->getPlayerManager()->getLocalPlayer());
 }
 
 void Network::updateServer()
@@ -198,7 +198,7 @@ void Network::updateServer()
 
 	case ClientState::PACKET_RECEIVED:
 		m_data.packet.setMode(raz::SerializationMode::DESERIALIZE);
-		handlePacket(m_data.packet);
+		handlePacket(m_data.packet, m_app->getPlayerManager()->findPlayer(m_data.client.socket));
 		break;
 
 	case ClientState::UNSET:
@@ -209,15 +209,15 @@ void Network::updateServer()
 	}
 }
 
-bool Network::handlePacket(Packet& packet)
+bool Network::handlePacket(Packet& packet, const Player* sender)
 {
-	return (tryHandle<Connected>(packet)
-		|| tryHandle<Disconnected>(packet)
-		|| tryHandle<SwitchPlayer>(packet)
-		|| tryHandle<Message>(packet)
-		|| tryHandle<AddGameObject>(packet)
-		|| tryHandle<RemoveGameObject>(packet)
-		|| tryHandle<GameObjectSync>(packet));
+	return (tryHandle<Connected>(packet, sender)
+		|| tryHandle<Disconnected>(packet, sender)
+		|| tryHandle<SwitchPlayer>(packet, sender)
+		|| tryHandle<Message>(packet, sender)
+		|| tryHandle<AddGameObject>(packet, sender)
+		|| tryHandle<RemoveGameObject>(packet, sender)
+		|| tryHandle<GameObjectSync>(packet, sender));
 }
 
 void Network::handleConnect(Client& client)

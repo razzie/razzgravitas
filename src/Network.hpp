@@ -26,6 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <raz/timer.hpp>
 #include "IApplication.hpp"
 
+struct Player;
+
 enum NetworkMode
 {
 	Disabled,
@@ -64,18 +66,34 @@ private:
 
 	void updateClient();
 	void updateServer();
-	bool handlePacket(Packet& packet);
+	bool handlePacket(Packet& packet, const Player* sender);
 	void handleConnect(Client& client);
 	void handleDisconnect(Client& client);
 
+	template <class T>
+	static bool checkPlayer(const T& t, const void* player)
+	{
+		return true;
+	}
+
+	template <class T>
+	static auto checkPlayer(const T& t, const Player* player) -> decltype((void)T::player_id, bool())
+	{
+		return (player && t.player_id == player->player_id);
+	}
+
 	template<class Event>
-	bool tryHandle(Packet& packet)
+	bool tryHandle(Packet& packet, const Player* player)
 	{
 		if (packet.getType() == (raz::PacketType)Event::getEventType())
 		{
 			Event e;
 			packet.setMode(raz::SerializationMode::DESERIALIZE);
 			packet(e);
+
+			if (m_mode == NetworkMode::Server && !checkPlayer(e, player))
+				return false;
+
 			m_app->handle(e, EventSource::Network);
 			return true;
 		}
