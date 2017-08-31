@@ -18,26 +18,38 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
+#include <cstdint>
+#include <mutex>
+#include <raz/bitset.hpp>
 #include "Settings.hpp"
-#include "Events.hpp"
 
-class PlayerManager;
+class Application;
 
-class IApplication
+struct Player
+{
+	uint16_t player_id;
+	mutable int data; // https://stackoverflow.com/questions/1953639/is-it-safe-to-cast-socket-to-int-under-win64
+};
+
+class PlayerManager
 {
 public:
-	// I don't need virtual desctructor
-	virtual PlayerManager* getPlayerManager() = 0;
-	virtual void exit(int exit_code, const char* msg = nullptr) = 0;
-	virtual void handle(Connected e, EventSource src) = 0;
-	virtual void handle(Disconnected e, EventSource src) = 0;
-	virtual void handle(SwitchPlayer e, EventSource src) = 0;
-	virtual void handle(Message e, EventSource src) = 0;
-	virtual void handle(AddGameObject e, EventSource src) = 0;
-	virtual void handle(RemoveGameObjectsNearMouse e, EventSource src) = 0;
-	virtual void handle(RemoveGameObject e, EventSource src) = 0;
-	virtual void handle(RemovePlayerGameObjects e, EventSource src) = 0;
-	virtual void handle(GameObjectSync e, EventSource src) = 0;
-	virtual void handle(GameObjectSyncRequest e, EventSource src) = 0;
-	virtual void handle(IGameObjectRenderInvoker*) = 0;
+	PlayerManager();
+	~PlayerManager();
+	const Player* addPlayer();
+	const Player* addLocalPlayer(uint16_t player_id);
+	const Player* getLocalPlayer();
+	const Player* findPlayer(int data);
+	bool switchPlayer(uint16_t player_id, uint16_t new_player_id);
+	void removePlayer(uint16_t player_id);
+
+protected:
+	friend class Application;
+	void reset();
+
+private:
+	std::mutex m_mutex;
+	Player m_players[MAX_PLAYERS];
+	raz::Bitset<MAX_PLAYERS> m_player_slots;
+	Player* m_local_player;
 };

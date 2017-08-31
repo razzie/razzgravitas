@@ -34,6 +34,7 @@ public:
 	void operator()(); // loop
 	void operator()(IGameObjectRenderInvoker* world);
 	void operator()(Message e);
+	void operator()(SwitchPlayer e);
 
 private:
 	IApplication* m_app;
