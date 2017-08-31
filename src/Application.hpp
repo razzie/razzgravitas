@@ -27,19 +27,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "PlayerManager.hpp"
 #include "IApplication.hpp"
 
-enum class GameMode
-{
-	SingplePlay,
-	Host,
-	Client
-};
-
 class Application : public IApplication
 {
 public:
 	static int run(int argc, char** argv);
 
 	~Application();
+	virtual GameMode getGameMode() const;
 	virtual PlayerManager* getPlayerManager();
 	virtual void exit(int exit_code, const char* msg = nullptr);
 	virtual void handle(Connected e, EventSource src);
