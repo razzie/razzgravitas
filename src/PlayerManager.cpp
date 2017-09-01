@@ -66,7 +66,7 @@ const Player* PlayerManager::getLocalPlayer()
 	return m_local_player;
 }
 
-const Player* PlayerManager::findPlayer(int data)
+const Player* PlayerManager::findPlayer(const void* data)
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
 
@@ -107,7 +107,7 @@ void PlayerManager::removePlayer(uint16_t player_id)
 		return;
 
 	m_player_slots.unset(player_id);
-	m_players[player_id].data = 0;
+	m_players[player_id].data = nullptr;
 }
 
 void PlayerManager::reset()
@@ -120,6 +120,6 @@ void PlayerManager::reset()
 	for (uint16_t i = 0; i < MAX_PLAYERS; ++i)
 	{
 		m_players[i].player_id = i;
-		m_players[i].data = 0;
+		m_players[i].data = nullptr;
 	}
 }

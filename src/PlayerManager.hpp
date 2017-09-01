@@ -28,7 +28,7 @@ class Application;
 struct Player
 {
 	uint16_t player_id;
-	mutable int data; // https://stackoverflow.com/questions/1953639/is-it-safe-to-cast-socket-to-int-under-win64
+	mutable const void* data;
 };
 
 class PlayerManager
@@ -39,7 +39,7 @@ public:
 	const Player* addPlayer();
 	const Player* addLocalPlayer(uint16_t player_id);
 	const Player* getLocalPlayer();
-	const Player* findPlayer(int data);
+	const Player* findPlayer(const void* data);
 	bool switchPlayer(uint16_t player_id, uint16_t new_player_id);
 	void removePlayer(uint16_t player_id);
 

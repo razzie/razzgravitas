@@ -19,7 +19,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #pragma once
 
 #include <exception>
-#include <vector>
+#include <set>
 #include <raz/network.hpp>
 #include <raz/networkbackend.hpp>
 #include <raz/random.hpp>
@@ -49,20 +49,28 @@ public:
 	void operator()(std::exception& e);
 
 private:
-	typedef raz::NetworkServerTCP::Client Client;
-	typedef raz::NetworkServerBackendTCP::ClientState ClientState;
-	typedef raz::NetworkServerTCP::ClientData<sizeof(GameObjectSync)> Data;
+	typedef raz::NetworkServerUDP<MAX_PACKET_SIZE>::Client Client;
+	typedef raz::NetworkServerBackendUDP<MAX_PACKET_SIZE>::ClientState ClientState;
+	typedef raz::NetworkServerUDP<MAX_PACKET_SIZE>::ClientData<MAX_PACKET_SIZE> Data;
 	typedef decltype(Data::packet) Packet;
+
+	struct ClientComparator
+	{
+		bool operator()(const Client& a, const Client& b) const
+		{
+			return (std::memcmp(&a, &b, sizeof(Client)) < 0);
+		}
+	};
 
 	raz::NetworkInitializer m_init;
 	IApplication* m_app;
 	NetworkMode m_mode;
-	raz::NetworkClientTCP m_client;
-	raz::NetworkServerTCP m_server;
+	raz::NetworkClientUDP<MAX_PACKET_SIZE> m_client;
+	raz::NetworkServerUDP<MAX_PACKET_SIZE> m_server;
 	raz::Timer m_timer;
 	raz::Random m_sync_id_gen;
 	Data m_data;
-	std::vector<Client> m_clients;
+	std::set<Client, ClientComparator> m_clients;
 
 	void startClient(const char* cmdline);
 	void startServer(const char* cmdline);
@@ -72,6 +80,7 @@ private:
 	void handleHello(Client& client, Packet& packet);
 	void handleConnect(Client& client);
 	void handleDisconnect(Client& client);
+	const Player* getPlayer(Client& client);
 
 	template <class T>
 	static bool checkPlayer(const T& t, const void* player)
