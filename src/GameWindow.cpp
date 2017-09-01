@@ -167,6 +167,23 @@ void GameWindow::operator()()
 		case sf::Event::KeyPressed:
 			switch (event.key.code)
 			{
+			case sf::Keyboard::V:
+				if (event.key.control)
+				{
+					if (OpenClipboard(NULL) != FALSE)
+					{
+						HANDLE clip0 = GetClipboardData(CF_UNICODETEXT);
+						if (clip0 != NULL)
+						{
+							wchar_t *c = reinterpret_cast<wchar_t*>(GlobalLock(clip0));
+							m_input.setString(m_input.getString() + sf::String(c));
+							GlobalUnlock(clip0);
+						}
+						CloseClipboard();
+					}
+				}
+				break;
+
 			case sf::Keyboard::BackSpace:
 				if (!m_input.getString().isEmpty())
 				{
