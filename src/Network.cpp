@@ -21,6 +21,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "Application.hpp"
 #include "Network.hpp"
 
+static_assert(MAX_PACKET_SIZE >= sizeof(GameObjectSync), "MAX_PACKET_SIZE is too low");
+
 Network::Network(IApplication* app, NetworkMode mode, const char* cmdline) :
 	m_app(app),
 	m_mode(NetworkMode::Disabled),
@@ -183,12 +185,18 @@ void Network::startClient(const char* cmdline)
 		packet.setType((raz::PacketType)EventType::Hello);
 		packet.setMode(raz::SerializationMode::SERIALIZE);
 		packet(e);
-		m_client.send(packet);
+		try
+		{
+			m_client.send(packet);
+			return;
+		}
+		catch (raz::NetworkSocketError&)
+		{
+
+		}
 	}
-	else
-	{
-		m_app->exit(-1, "Cannot connect to server");
-	}
+	
+	m_app->exit(-1, "Cannot connect to server");
 }
 
 void Network::startServer(const char* cmdline)
@@ -198,15 +206,20 @@ void Network::startServer(const char* cmdline)
 	if (m_server.getBackend().open(port))
 	{
 		m_mode = NetworkMode::Server;
+		return;
 	}
-	else
-	{
-		m_app->exit(-1, "Cannot host game");
-	}
+
+	m_app->exit(-1, "Cannot host game");
 }
 
 void Network::updateClient()
 {
+	if (!m_app->getPlayerManager()->getLocalPlayer() && m_timer.peekElapsed() > CONNECTION_TIMEOUT)
+	{
+		m_app->exit(-1, "Cannot connect to server");
+		return;
+	}
+
 	m_data.packet.reset();
 	if (!m_client.receive(m_data.packet, GAME_SYNC_TIMEOUT))
 		return;
@@ -224,27 +237,26 @@ void Network::updateServer()
 
 		switch (m_data.state)
 		{
-		case ClientState::CLIENT_CONNECTED:
-			// we will wait for Hello packet
-			break;
-
-		case ClientState::CLIENT_DISCONNECTED:
+		case ClientState::CLIENT_UNAVAILABLE:
 			handleDisconnect(m_data.client);
 			break;
 
 		case ClientState::PACKET_RECEIVED:
 			m_data.packet.setMode(raz::SerializationMode::DESERIALIZE);
-			if (const Player* player = m_app->getPlayerManager()->findPlayer(m_data.client.socket))
+			if (const Player* player = getPlayer(m_data.client))
 				handlePacket(m_data.packet, player);
 			else
 				handleHello(m_data.client, m_data.packet);
 			break;
+		}
 
-		case ClientState::UNSET:
+		if (m_timer.peekElapsed() > GAME_SYNC_TIMEOUT)
+		{
+			m_timer.reset();
+
 			GameObjectSyncRequest e;
 			e.sync_id = (uint32_t)m_sync_id_gen();
 			m_app->handle(e, EventSource::Network);
-			break;
 		}
 	}
 	catch (raz::NetworkSocketError&)
@@ -289,7 +301,6 @@ void Network::handleHello(Client& client, Packet& packet)
 			packet(e);
 
 			m_server.send(client, packet);
-			m_server.getBackend().close(client);
 		}
 	}
 }
@@ -299,8 +310,8 @@ void Network::handleConnect(Client& client)
 	const Player* player = m_app->getPlayerManager()->addPlayer();
 	if (player)
 	{
-		player->data = (int)client.socket;
-		m_clients.push_back(client);
+		auto it = m_clients.insert(client).first;
+		player->data = &(*it);
 
 		Connected e;
 		e.player_id = player->player_id;
@@ -323,13 +334,12 @@ void Network::handleConnect(Client& client)
 		packet(e);
 
 		m_server.send(client, packet);
-		m_server.getBackend().close(client);
 	}
 }
 
 void Network::handleDisconnect(Client& client)
 {
-	const Player* player = m_app->getPlayerManager()->findPlayer(client.socket);
+	const Player* player = getPlayer(client);
 	if (player)
 	{
 		RemovePlayerGameObjects e;
@@ -338,7 +348,7 @@ void Network::handleDisconnect(Client& client)
 
 		for (auto it = m_clients.begin(), end = m_clients.end(); it != end; ++it)
 		{
-			if (player->data == (int)it->socket)
+			if (player->data == &(*it))
 			{
 				m_clients.erase(it);
 				return;
@@ -346,4 +356,13 @@ void Network::handleDisconnect(Client& client)
 		}
 		m_app->getPlayerManager()->removePlayer(player->player_id);
 	}
+}
+
+const Player* Network::getPlayer(Client& client)
+{
+	auto it = m_clients.find(client);
+	if (it == m_clients.end())
+		return nullptr;
+
+	return m_app->getPlayerManager()->findPlayer(&(*it));
 }

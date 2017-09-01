@@ -153,8 +153,9 @@ void Application::handle(Connected e, EventSource src)
 {
 	if (m_mode == GameMode::Client)
 	{
-		m_player_mgr.addLocalPlayer(e.player_id);
-		m_window.start(this, e.player_id);
+		const Player* player = m_player_mgr.addLocalPlayer(e.player_id);
+		if (player)
+			m_window.start(this, e.player_id);
 	}
 }
 
