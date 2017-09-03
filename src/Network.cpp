@@ -22,6 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "Network.hpp"
 
 static_assert(MAX_PACKET_SIZE >= sizeof(GameObjectSync), "MAX_PACKET_SIZE is too low");
+static_assert(PING_RATE < CONNECTION_TIMEOUT, "PING_RATE should be lower than CONNECTION_TIMEOUT");
 
 Network::Network(IApplication* app, NetworkMode mode, const char* cmdline) :
 	m_app(app),
@@ -214,18 +215,39 @@ void Network::startServer(const char* cmdline)
 
 void Network::updateClient()
 {
-	if (!m_app->getPlayerManager()->getLocalPlayer() && m_timer.peekElapsed() > CONNECTION_TIMEOUT)
+	if (m_timer.peekElapsed() > CONNECTION_TIMEOUT)
 	{
-		m_app->exit(-1, "Cannot connect to server");
+		if (m_app->getPlayerManager()->getLocalPlayer())
+			m_app->exit(-1, "Connection timed out");
+		else
+			m_app->exit(-1, "Cannot connect to server");
+
 		return;
 	}
 
+	const Player* player = m_app->getPlayerManager()->getLocalPlayer();
+	if (player)
+	{
+		uint64_t timeout =
+			std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - player->last_updated).count();
+
+		if (timeout >= PING_RATE)
+		{
+			player->last_updated = std::chrono::steady_clock::now();
+
+			Packet packet;
+			packet.setType((raz::PacketType)EventType::Ping);
+			m_client.send(packet);
+		}
+	}
+
 	m_data.packet.reset();
-	if (!m_client.receive(m_data.packet, GAME_SYNC_TIMEOUT))
+	if (!m_client.receive(m_data.packet, GAME_SYNC_RATE))
 		return;
 
 	m_data.packet.setMode(raz::SerializationMode::DESERIALIZE);
-	handlePacket(m_data.packet, m_app->getPlayerManager()->getLocalPlayer());
+	handlePacket(m_data.packet, player);
+	m_timer.reset();
 }
 
 void Network::updateServer()
@@ -233,7 +255,7 @@ void Network::updateServer()
 	try
 	{
 		m_data.packet.reset();
-		m_server.receive(m_data, GAME_SYNC_TIMEOUT);
+		m_server.receive(m_data, GAME_SYNC_RATE);
 
 		switch (m_data.state)
 		{
@@ -250,9 +272,10 @@ void Network::updateServer()
 			break;
 		}
 
-		if (m_timer.peekElapsed() > GAME_SYNC_TIMEOUT)
+		if (m_timer.peekElapsed() > GAME_SYNC_RATE)
 		{
 			m_timer.reset();
+			handleClientTimeouts(); // dont really need to run it in every cycle
 
 			GameObjectSyncRequest e;
 			e.sync_id = (uint32_t)m_sync_id_gen();
@@ -269,6 +292,12 @@ void Network::updateServer()
 
 bool Network::handlePacket(Packet& packet, const Player* sender)
 {
+	if (packet.getType() == (raz::PacketType)EventType::Ping && sender)
+	{
+		sender->last_updated = std::chrono::steady_clock::now();
+		return true;
+	}
+
 	return (tryHandle<Connected>(packet, sender)
 		|| tryHandle<Disconnected>(packet, sender)
 		|| tryHandle<SwitchPlayer>(packet, sender)
@@ -355,6 +384,32 @@ void Network::handleDisconnect(Client& client)
 			}
 		}
 		m_app->getPlayerManager()->removePlayer(player->player_id);
+	}
+}
+
+void Network::handleClientTimeouts()
+{
+	for (auto it = m_clients.begin(); it != m_clients.end(); )
+	{
+		const Player* player = m_app->getPlayerManager()->findPlayer(&(*it));
+		if (player)
+		{
+			uint64_t timeout =
+				std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - player->last_updated).count();
+
+			if (timeout > CONNECTION_TIMEOUT)
+			{
+				RemovePlayerGameObjects e;
+				e.player_id = player->player_id;
+				m_app->handle(e, EventSource::Network);
+
+				m_app->getPlayerManager()->removePlayer(player->player_id);
+				it = m_clients.erase(it);
+				continue;
+			}
+		}
+
+		++it;
 	}
 }
 
