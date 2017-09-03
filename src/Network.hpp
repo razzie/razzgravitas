@@ -80,6 +80,7 @@ private:
 	void handleHello(Client& client, Packet& packet);
 	void handleConnect(Client& client);
 	void handleDisconnect(Client& client);
+	void handleClientTimeouts();
 	const Player* getPlayer(Client& client);
 
 	template <class T>

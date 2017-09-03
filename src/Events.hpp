@@ -28,6 +28,7 @@ enum class EventType : uint32_t
 {
 	Unknown,
 	Hello             = (uint32_t)raz::hash("Hello"),
+	Ping              = (uint32_t)raz::hash("Ping"),
 	Connected         = (uint32_t)raz::hash("Connected"),
 	Disconnected      = (uint32_t)raz::hash("Disconnected"),
 	SwitchPlayer      = (uint32_t)raz::hash("SwitchPlayer"),
@@ -64,6 +65,10 @@ struct Hello : public Event<EventType::Hello>
 	{
 		serializer(checksum);
 	}
+};
+
+struct Ping : public Event<EventType::Ping>
+{
 };
 
 struct Connected : public Event<EventType::Connected>
@@ -122,9 +127,9 @@ struct Message : public Event<EventType::Message>
 
 struct AddGameObject : public Event<EventType::AddGameObject>
 {
+	float radius;
 	float position_x;
 	float position_y;
-	float radius;
 	float velocity_x;
 	float velocity_y;
 	uint16_t player_id;
@@ -132,7 +137,7 @@ struct AddGameObject : public Event<EventType::AddGameObject>
 	template<class Serializer>
 	void operator()(Serializer& serializer)
 	{
-		serializer(position_x)(position_y)(radius)(velocity_x)(velocity_y)(player_id);
+		serializer(radius)(position_x)(position_y)(velocity_x)(velocity_y)(player_id);
 	}
 };
 
@@ -192,9 +197,12 @@ constexpr uint64_t Hello::calculate()
 		+ MAX_PLAYERS
 		+ MAX_GAME_OBJECTS_PER_PLAYER
 		+ MAX_GAME_OBJECTS_PER_SYNC
-		+ GAME_SYNC_TIMEOUT
+		+ GAME_SYNC_RATE
+		+ PING_RATE
+		+ CONNECTION_TIMEOUT
 
 		+ (uint64_t)EventType::Hello
+		+ (uint64_t)EventType::Ping
 		+ (uint64_t)EventType::Connected
 		+ (uint64_t)EventType::Disconnected
 		+ (uint64_t)EventType::SwitchPlayer
@@ -204,6 +212,7 @@ constexpr uint64_t Hello::calculate()
 		+ (uint64_t)EventType::GameObjectSync
 
 		+ sizeof(Hello)
+		+ sizeof(Ping)
 		+ sizeof(Connected)
 		+ sizeof(Disconnected)
 		+ sizeof(SwitchPlayer)

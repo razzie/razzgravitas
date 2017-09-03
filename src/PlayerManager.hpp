@@ -18,6 +18,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <mutex>
 #include <raz/bitset.hpp>
@@ -28,6 +29,7 @@ class Application;
 struct Player
 {
 	uint16_t player_id;
+	mutable std::chrono::steady_clock::time_point last_updated;
 	mutable const void* data;
 };
 

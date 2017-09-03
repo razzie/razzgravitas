@@ -41,7 +41,9 @@ const Player* PlayerManager::addPlayer()
 	else
 	{
 		m_player_slots.set(*slot);
-		return  &m_players[*slot];
+		Player* player = &m_players[*slot];
+		player->last_updated = std::chrono::steady_clock::now();
+		return player;
 	}
 }
 
@@ -58,7 +60,8 @@ const Player* PlayerManager::addLocalPlayer(uint16_t player_id)
 
 	m_player_slots.set(player_id);
 	m_local_player = &m_players[player_id];
-	return &m_players[player_id];
+	m_local_player->last_updated = std::chrono::steady_clock::now();
+	return m_local_player;
 }
 
 const Player* PlayerManager::getLocalPlayer()
@@ -92,6 +95,7 @@ bool PlayerManager::switchPlayer(uint16_t player_id, uint16_t new_player_id)
 	m_player_slots.set(new_player_id);
 	m_player_slots.unset(player_id);
 	std::swap(m_players[player_id].data, m_players[new_player_id].data);
+	std::swap(m_players[player_id].last_updated, m_players[new_player_id].last_updated);
 
 	if (m_local_player && m_local_player->player_id == player_id)
 		m_local_player = &m_players[new_player_id];
@@ -107,7 +111,9 @@ void PlayerManager::removePlayer(uint16_t player_id)
 		return;
 
 	m_player_slots.unset(player_id);
-	m_players[player_id].data = nullptr;
+	Player* player = &m_players[player_id];
+	player->last_updated = std::chrono::time_point<std::chrono::steady_clock>();
+	player->data = nullptr;
 }
 
 void PlayerManager::reset()
@@ -120,6 +126,7 @@ void PlayerManager::reset()
 	for (uint16_t i = 0; i < MAX_PLAYERS; ++i)
 	{
 		m_players[i].player_id = i;
+		m_players[i].last_updated = std::chrono::time_point<std::chrono::steady_clock>();
 		m_players[i].data = nullptr;
 	}
 }
