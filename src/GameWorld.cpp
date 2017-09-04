@@ -26,9 +26,10 @@ static constexpr double PI = 3.14159265358979323846;
 GameWorld::GameWorld(IApplication* app) :
 	m_app(app),
 	m_world(b2Vec2(0.f, 0.f)),
+	m_step_time(0.f),
 	m_last_sync_id(0)
 {
-	setLevelBounds(RESOLUTION_WIDTH, RESOLUTION_HEIGHT);
+	setLevelBounds(WORLD_WIDTH, WORLD_HEIGHT);
 
 	std::memset(m_obj_db, 0, sizeof(m_obj_db));
 }
@@ -56,31 +57,35 @@ void GameWorld::operator()()
 {
 	std::lock_guard<std::mutex> guard(m_lock);
 
-	m_world.Step(0.001f * m_timer.getElapsed(), 8, 3);
-
-	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
+	float delta = 0.001f * m_timer.getElapsed();
+	for (m_step_time += delta; m_step_time >= WORLD_STEP; m_step_time -= WORLD_STEP)
 	{
-		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
-		if (obj == 0)
-			continue;
+		m_world.Step(WORLD_STEP, 8, 3);
 
-		b2Vec2 p = body->GetPosition();
-
-		for (b2Body* body2 = body->GetNext(); body2 != 0; body2 = body2->GetNext())
+		for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
 		{
-			GameObject* obj2 = static_cast<GameObject*>(body2->GetUserData());
-			if (obj2 == 0)
+			GameObject* obj = static_cast<GameObject*>(body->GetUserData());
+			if (obj == 0)
 				continue;
 
-			b2Vec2 p2 = body2->GetPosition();
-			b2Vec2 dir = p - p2;
-			float dist = dir.LengthSquared();
-			float angle = (float)std::atan2(dir.y, dir.x) + (float)PI;
-			float force = (GRAVITY * body->GetMass() * body2->GetMass()) / dist;
-			b2Vec2 force_vect(std::cos(angle) * force, std::sin(angle) * force);
+			b2Vec2 p = body->GetPosition();
 
-			body->ApplyForce(force_vect, body->GetPosition(), true);
-			body2->ApplyForce(-force_vect, body2->GetPosition(), true);
+			for (b2Body* body2 = body->GetNext(); body2 != 0; body2 = body2->GetNext())
+			{
+				GameObject* obj2 = static_cast<GameObject*>(body2->GetUserData());
+				if (obj2 == 0)
+					continue;
+
+				b2Vec2 p2 = body2->GetPosition();
+				b2Vec2 dir = p - p2;
+				float dist = dir.LengthSquared();
+				float angle = (float)std::atan2(dir.y, dir.x) + (float)PI;
+				float force = (GRAVITY * body->GetMass() * body2->GetMass()) / dist;
+				b2Vec2 force_vect(std::cos(angle) * force, std::sin(angle) * force);
+
+				body->ApplyForce(force_vect, body->GetPosition(), true);
+				body2->ApplyForce(-force_vect, body2->GetPosition(), true);
+			}
 		}
 	}
 
@@ -89,7 +94,7 @@ void GameWorld::operator()()
 
 void GameWorld::operator()(AddGameObject e)
 {
-	if (e.position_x < 0.f || e.position_x > RESOLUTION_WIDTH || e.position_y < 0.f || e.position_y > RESOLUTION_HEIGHT)
+	if (e.position_x < 0.f || e.position_x > WORLD_WIDTH || e.position_y < 0.f || e.position_y > WORLD_HEIGHT)
 		return;
 
 	std::lock_guard<std::mutex> guard(m_lock);
