@@ -18,11 +18,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
-// core app settings
+// window settings
 #define APP_NAME "RazzGravitas"
 #define RESOLUTION_WIDTH 800
 #define RESOLUTION_HEIGHT 600
-#define GRAVITY 10000.f
+
+// world settings
+#define WORLD_WIDTH 80
+#define WORLD_HEIGHT 60
+#define WORLD_SCALE (1.f / 10.f)
+#define WORLD_STEP (1.f / 60.f)
+#define GRAVITY 1000.f
+#define MIN_GAME_OBJECT_SIZE 0.4f
+#define MAX_GAME_OBJECT_SIZE 3.2f
 #define MAX_PLAYERS 12
 #define MAX_GAME_OBJECTS_PER_PLAYER 32
 
