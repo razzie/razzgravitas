@@ -85,12 +85,9 @@ GameWindow::GameWindow(IApplication* app, uint16_t player_id) :
 	m_window.create(sf::VideoMode(RESOLUTION_WIDTH, RESOLUTION_HEIGHT), title.c_str(), (sf::Style::Resize + sf::Style::Close), settings);
 	m_window.setVerticalSyncEnabled(true);
 	m_window.setKeyRepeatEnabled(false);
-	m_window.clear(sf::Color::White);
 
-	m_view.setSize(WORLD_WIDTH, WORLD_HEIGHT);
-	m_view.setCenter(m_view.getSize().x / 2, m_view.getSize().y / 2);
-	m_view = getLetterboxView(m_view, RESOLUTION_WIDTH, RESOLUTION_HEIGHT);
-	m_window.setView(m_view);
+	m_world_view.setSize(WORLD_WIDTH, WORLD_HEIGHT);
+	m_world_view.setCenter(m_world_view.getSize().x / 2, m_world_view.getSize().y / 2);
 
 	raz::ColorTable color_table;
 	for (int i = 0; i < MAX_PLAYERS; ++i)
@@ -113,17 +110,14 @@ GameWindow::GameWindow(IApplication* app, uint16_t player_id) :
 	m_msg.setFont(m_font);
 	m_msg.setOutlineColor(sf::Color::White);
 	m_msg.setOutlineThickness(0.1f);
-	m_msg.setPosition(1.f, 1.f);
 	m_msg.setCharacterSize(MESSAGE_CHAR_SIZE);
-	m_msg.setScale(0.1f, 0.1f);
 
 	m_input.setFont(m_font);
 	m_input.setOutlineColor(sf::Color::White);
 	m_input.setOutlineThickness(0.1f);
-	m_input.setPosition(1.f, WORLD_HEIGHT - (MESSAGE_CHAR_SIZE * 0.1f) - 1.f);
 	m_input.setCharacterSize(MESSAGE_CHAR_SIZE);
-	m_input.setScale(0.1f, 0.1f);
 
+	resize(RESOLUTION_WIDTH, RESOLUTION_HEIGHT);
 	setPlayer(player_id);
 }
 
@@ -135,10 +129,13 @@ void GameWindow::renderGameObject(float x, float y, float r, uint16_t player_id)
 {
 	float outline_radius = m_game_object_shape.getOutlineThickness();
 	raz::Color color = m_player_colors[player_id];
+
 	m_game_object_shape.setOutlineColor(sf::Color(color.r, color.g, color.b));
 	m_game_object_shape.setFillColor(sf::Color(color.r / 2 + 127, color.g / 2 + 127, color.b / 2 + 127));
 	m_game_object_shape.setPosition(x - r + outline_radius, y - r + outline_radius);
 	m_game_object_shape.setRadius(r - outline_radius);
+
+	m_window.setView(m_world_view);
 	m_window.draw(m_game_object_shape);
 }
 
@@ -146,6 +143,8 @@ void GameWindow::operator()()
 {
 	if (!m_window.isOpen())
 		m_app->exit(0);
+
+	m_window.setView(m_world_view);
 
 	sf::Event event;
 	while (m_window.pollEvent(event))
@@ -157,9 +156,7 @@ void GameWindow::operator()()
 			break;
 
 		case sf::Event::Resized:
-			m_view = getLetterboxView(m_view, event.size.width, event.size.height);
-			m_window.setView(m_view);
-			m_window.clear(sf::Color::White);
+			resize(event.size.width, event.size.height);
 			break;
 
 		case sf::Event::TextEntered:
@@ -296,6 +293,7 @@ void GameWindow::operator()()
 		m_msg.setString({});
 	}
 
+	m_window.setView(m_ui_view);
 	m_window.draw(m_msg);
 	m_window.draw(m_input);
 
@@ -315,6 +313,19 @@ void GameWindow::operator()(Message e)
 void GameWindow::operator()(SwitchPlayer e)
 {
 	setPlayer(e.new_player_id);
+}
+
+void GameWindow::resize(unsigned width, unsigned height)
+{
+	m_world_view = getLetterboxView(m_world_view, width, height);
+
+	m_ui_view.setSize((float)width, (float)height);
+	m_ui_view.setCenter(m_ui_view.getSize().x / 2, m_ui_view.getSize().y / 2);
+
+	m_msg.setPosition(10.f, 10.f);
+	m_input.setPosition(10.f, height - MESSAGE_CHAR_SIZE - 10.f);
+
+	m_window.clear(sf::Color::White);
 }
 
 void GameWindow::setPlayer(uint16_t player_id)

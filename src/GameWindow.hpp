@@ -39,7 +39,8 @@ public:
 private:
 	IApplication* m_app;
 	sf::RenderWindow m_window;
-	sf::View m_view;
+	sf::View m_world_view;
+	sf::View m_ui_view;
 	sf::CircleShape m_game_object_shape;
 	sf::CircleShape m_mouse_shape;
 	sf::RectangleShape m_clear_rect;
@@ -55,5 +56,6 @@ private:
 	int m_mouse_drag_y;
 	bool m_mouse_down;
 
+	void resize(unsigned width, unsigned height);
 	void setPlayer(uint16_t player_id);
 };
