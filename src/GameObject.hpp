@@ -54,7 +54,7 @@ struct GameObjectState
 class IGameObjectRenderer
 {
 public:
-	virtual void renderGameObject(float x, float y, float r, uint16_t player_id) = 0;
+	virtual void renderGameObject(float x, float y, float r, float vx, float vy, uint16_t player_id) = 0;
 };
 
 class IGameObjectRenderInvoker
