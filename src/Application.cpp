@@ -104,7 +104,7 @@ void Application::setGameMode(GameMode mode)
 
 bool Application::handleCommand(const std::string& cmd)
 {
-	if (cmd.compare(0, 6, "/host ") == 0 && cmd.size() > 9)
+	if (cmd.compare(0, 6, "/host ") == 0 && cmd.size() > 6)
 	{
 		m_cmdline = &cmd[6];
 		std::thread(&Application::setGameMode, this, GameMode::Host).detach(); //setGameMode(GameMode::Host);

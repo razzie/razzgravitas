@@ -49,7 +49,8 @@ void GameWorld::render(IGameObjectRenderer* window) const
 			continue;
 
 		b2Vec2 pos = body->GetPosition();
-		window->renderGameObject(pos.x, pos.y, obj->radius, obj->player_id);
+		b2Vec2 movement = body->GetLinearVelocity();
+		window->renderGameObject(pos.x, pos.y, obj->radius, movement.x, movement.y, obj->player_id);
 	}
 }
 
@@ -89,7 +90,7 @@ void GameWorld::operator()()
 		}
 	}
 
-	m_app->handle(this);
+	m_app->handle(this); // render
 }
 
 void GameWorld::operator()(AddGameObject e)

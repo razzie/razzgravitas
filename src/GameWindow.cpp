@@ -19,6 +19,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "GameWindow.hpp"
 #include <ShlObj.h>
 
+extern const char* canvas_vert;
+extern const char* canvas_frag;
+
 /*
  * Source: https://github.com/SFML/SFML/wiki/Source:-Letterbox-effect-using-a-view
  */
@@ -100,7 +103,7 @@ GameWindow::GameWindow(IApplication* app, uint16_t player_id) :
 	m_mouse_shape.setFillColor(sf::Color::Transparent);
 
 	m_clear_rect.setSize(sf::Vector2f(WORLD_WIDTH, WORLD_HEIGHT));
-	m_clear_rect.setFillColor(sf::Color(255, 255, 255, 4));
+	m_clear_rect.setFillColor(sf::Color(255, 255, 255, 16));
 
 	PWSTR font_filename;
 	SHGetKnownFolderPath(FOLDERID_Fonts, 0, NULL, &font_filename);
@@ -117,6 +120,9 @@ GameWindow::GameWindow(IApplication* app, uint16_t player_id) :
 	m_input.setOutlineThickness(0.1f);
 	m_input.setCharacterSize(MESSAGE_CHAR_SIZE);
 
+	if (sf::Shader::isAvailable())
+		m_canvas_shader.loadFromMemory(canvas_vert, canvas_frag);
+
 	resize(RESOLUTION_WIDTH, RESOLUTION_HEIGHT);
 	setPlayer(player_id);
 }
@@ -125,24 +131,41 @@ GameWindow::~GameWindow()
 {
 }
 
-void GameWindow::renderGameObject(float x, float y, float r, uint16_t player_id)
+void GameWindow::renderGameObject(float x, float y, float r, float vx, float vy, uint16_t player_id)
 {
 	float outline_radius = m_game_object_shape.getOutlineThickness();
 	raz::Color color = m_player_colors[player_id];
 
 	m_game_object_shape.setOutlineColor(sf::Color(color.r, color.g, color.b));
 	m_game_object_shape.setFillColor(sf::Color(color.r / 2 + 127, color.g / 2 + 127, color.b / 2 + 127));
-	m_game_object_shape.setPosition(x - r + outline_radius, y - r + outline_radius);
+	m_game_object_shape.setPosition(x, y);
 	m_game_object_shape.setRadius(r - outline_radius);
+	m_game_object_shape.setOrigin(r - outline_radius, r - outline_radius);
 
-	m_window.setView(m_world_view);
-	m_window.draw(m_game_object_shape);
+	m_canvas.draw(m_game_object_shape);
 }
 
 void GameWindow::operator()()
 {
 	if (!m_window.isOpen())
 		m_app->exit(0);
+
+	//m_window.clear(sf::Color::White);
+	m_window.setView(m_ui_view);
+
+	m_canvas.draw(m_clear_rect, sf::BlendAdd);
+
+	if (sf::Shader::isAvailable())
+	{
+		auto rect = m_canvas_quad.getTextureRect();
+		m_canvas_shader.setUniform("texture", sf::Shader::CurrentTexture);
+		m_canvas_shader.setUniform("resolution", sf::Vector2f((float)rect.width, (float)rect.height));
+		m_window.draw(m_canvas_quad, &m_canvas_shader);
+	}
+	else
+	{
+		m_window.draw(m_canvas_quad);
+	}
 
 	m_window.setView(m_world_view);
 
@@ -212,6 +235,7 @@ void GameWindow::operator()()
 			else if (m_mouse_radius > MAX_GAME_OBJECT_SIZE)
 				m_mouse_radius = MAX_GAME_OBJECT_SIZE;
 			m_mouse_shape.setRadius(m_mouse_radius);
+			m_mouse_shape.setOrigin(m_mouse_radius, m_mouse_radius);
 			break;
 
 		case sf::Event::MouseButtonPressed:
@@ -254,11 +278,9 @@ void GameWindow::operator()()
 		}
 	}
 
-	m_window.draw(m_clear_rect, sf::BlendAdd);
-
 	if (m_mouse_down)
 	{
-		m_mouse_shape.setPosition(m_window.mapPixelToCoords(sf::Vector2i(m_mouse_drag_x, m_mouse_drag_y)) - sf::Vector2f(m_mouse_radius, m_mouse_radius));
+		m_mouse_shape.setPosition(m_window.mapPixelToCoords(sf::Vector2i(m_mouse_drag_x, m_mouse_drag_y)));
 
 		sf::Vertex line[] =
 		{
@@ -270,7 +292,7 @@ void GameWindow::operator()()
 	}
 	else
 	{
-		m_mouse_shape.setPosition(m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window)) - sf::Vector2f(m_mouse_radius, m_mouse_radius));
+		m_mouse_shape.setPosition(m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window)));
 	}
 	m_window.draw(m_mouse_shape);
 
@@ -302,7 +324,9 @@ void GameWindow::operator()()
 
 void GameWindow::operator()(IGameObjectRenderInvoker* world)
 {
+	//m_canvas.setView(m_world_view);
 	world->render(this);
+	m_canvas.display();
 }
 
 void GameWindow::operator()(Message e)
@@ -322,9 +346,14 @@ void GameWindow::resize(unsigned width, unsigned height)
 	m_ui_view.setSize((float)width, (float)height);
 	m_ui_view.setCenter(m_ui_view.getSize().x / 2, m_ui_view.getSize().y / 2);
 
+	m_canvas.create(width, height);
+	m_canvas.setView(m_world_view);
+	m_canvas_quad.setTexture(m_canvas.getTexture(), true);
+
 	m_msg.setPosition(10.f, 10.f);
 	m_input.setPosition(10.f, height - MESSAGE_CHAR_SIZE - 10.f);
 
+	m_canvas.clear(sf::Color::White);
 	m_window.clear(sf::Color::White);
 }
 
@@ -334,6 +363,38 @@ void GameWindow::setPlayer(uint16_t player_id)
 
 	raz::Color player_color = m_player_colors[m_player_id];
 
-	m_mouse_shape.setOutlineColor(sf::Color(player_color.r, player_color.g, player_color.b, 6));
+	m_mouse_shape.setOutlineColor(sf::Color(player_color.r, player_color.g, player_color.b));
 	m_input.setFillColor(sf::Color(player_color.r, player_color.g, player_color.b));
 }
+
+
+#define GLSL(x) "#version 120\n" #x
+
+const char* canvas_vert = GLSL(
+void main()
+{
+	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
+	gl_FrontColor = gl_Color;
+}
+);
+
+const char* canvas_frag = GLSL(
+uniform sampler2D texture;
+uniform vec2 resolution;
+
+void main()
+{
+	vec2 h_uv = vec2(0.5 / resolution.x, 0.0);
+	vec2 v_uv = vec2(0.0, 0.5 / resolution.y);
+	vec4 color = vec4(0.0);
+
+	color += texture2D(texture, gl_TexCoord[0].xy - h_uv - v_uv);
+	color += texture2D(texture, gl_TexCoord[0].xy + h_uv - v_uv);
+	color += texture2D(texture, gl_TexCoord[0].xy + h_uv + v_uv);
+	color += texture2D(texture, gl_TexCoord[0].xy - h_uv + v_uv);
+	color /= 4.0;
+
+	gl_FragColor = color;
+}
+);

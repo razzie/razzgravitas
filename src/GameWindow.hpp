@@ -30,7 +30,7 @@ class GameWindow : public IGameObjectRenderer
 public:
 	GameWindow(IApplication* app, uint16_t player_id);
 	~GameWindow();
-	virtual void renderGameObject(float x, float y, float r, uint16_t player_id);
+	virtual void renderGameObject(float x, float y, float r, float vx, float vy, uint16_t player_id);
 	void operator()(); // loop
 	void operator()(IGameObjectRenderInvoker* world);
 	void operator()(Message e);
@@ -39,8 +39,11 @@ public:
 private:
 	IApplication* m_app;
 	sf::RenderWindow m_window;
+	sf::RenderTexture m_canvas;
 	sf::View m_world_view;
 	sf::View m_ui_view;
+	sf::Shader m_canvas_shader;
+	sf::Sprite m_canvas_quad;
 	sf::CircleShape m_game_object_shape;
 	sf::CircleShape m_mouse_shape;
 	sf::RectangleShape m_clear_rect;
