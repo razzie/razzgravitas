@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <raz/timer.hpp>
 #include "IApplication.hpp"
 
-class GameWorld : public IGameObjectRenderInvoker
+class GameWorld : public IGameObjectRenderInvoker, public b2ContactListener
 {
 public:
 	GameWorld(IApplication* app);
@@ -34,6 +34,7 @@ public:
 	virtual void render(IGameObjectRenderer* window) const;
 	void operator()(); // loop
 	void operator()(AddGameObject e);
+	void operator()(MergeGameObjects e);
 	void operator()(RemoveGameObjectsNearMouse e);
 	void operator()(RemoveGameObject e);
 	void operator()(RemovePlayerGameObjects e);
@@ -41,6 +42,8 @@ public:
 	void operator()(GameObjectSyncRequest);
 	void operator()(SwitchPlayer e);
 	void operator()(std::exception& e);
+
+	virtual void BeginContact(b2Contact *contact);
 
 private:
 	mutable std::mutex m_lock;
@@ -54,7 +57,9 @@ private:
 
 	void setLevelBounds(float width, float height);
 	bool findNewObjectID(uint16_t player_id, uint16_t& object_id);
-	void addGameObject(const AddGameObject& e, uint16_t object_id, uint32_t sync_id = 0);
+	GameObject* addGameObject(const AddGameObject& e);
+	GameObject* addGameObject(const AddGameObject& e, uint16_t object_id, uint32_t sync_id = 0);
+	void mergeGameObjects(GameObject* obj1, GameObject* obj2);
 	void removeGameObject(uint16_t player_id, uint16_t object_id);
 	void removeUnsyncedGameObjects(uint32_t sync_id);
 	void removeExpiredGameObjects();
