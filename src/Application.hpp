@@ -41,6 +41,7 @@ public:
 	virtual void handle(SwitchPlayer e, EventSource src);
 	virtual void handle(Message e, EventSource src);
 	virtual void handle(AddGameObject e, EventSource src);
+	virtual void handle(MergeGameObjects e, EventSource src);
 	virtual void handle(RemoveGameObjectsNearMouse e, EventSource src);
 	virtual void handle(RemoveGameObject e, EventSource src);
 	virtual void handle(RemovePlayerGameObjects e, EventSource src);

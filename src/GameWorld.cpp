@@ -31,6 +31,9 @@ GameWorld::GameWorld(IApplication* app) :
 {
 	setLevelBounds(WORLD_WIDTH, WORLD_HEIGHT);
 
+	if (m_app->getGameMode() != GameMode::Client)
+		m_world.SetContactListener(this);
+
 	std::memset(m_obj_db, 0, sizeof(m_obj_db));
 }
 
@@ -61,7 +64,7 @@ void GameWorld::operator()()
 	float delta = 0.001f * m_timer.getElapsed();
 	for (m_step_time += delta; m_step_time >= WORLD_STEP; m_step_time -= WORLD_STEP)
 	{
-		m_world.Step(WORLD_STEP, 8, 3);
+		removeExpiredGameObjects();
 
 		for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
 		{
@@ -88,9 +91,10 @@ void GameWorld::operator()()
 				body2->ApplyForce(-force_vect, body2->GetPosition(), true);
 			}
 		}
+
+		m_world.Step(WORLD_STEP, 8, 3);
 	}
 
-	removeExpiredGameObjects();
 	m_app->handle(this); // render
 }
 
@@ -98,11 +102,14 @@ void GameWorld::operator()(AddGameObject e)
 {
 	std::lock_guard<std::mutex> guard(m_lock);
 
-	uint16_t obj_id;
-	if (!findNewObjectID(e.player_id, obj_id))
-		return;
+	addGameObject(e);
+}
 
-	addGameObject(e, obj_id);
+void GameWorld::operator()(MergeGameObjects e)
+{
+	GameObject* obj1 = m_obj_db[e.player_id[0]][e.object_id[0]];
+	GameObject* obj2 = m_obj_db[e.player_id[1]][e.object_id[1]];
+	mergeGameObjects(obj1, obj2);
 }
 
 void GameWorld::operator()(RemoveGameObjectsNearMouse e)
@@ -232,6 +239,34 @@ void GameWorld::operator()(std::exception& e)
 	m_app->exit(-1, e.what());
 }
 
+void GameWorld::BeginContact(b2Contact* contact)
+{
+	if (m_app->getGameMode() == GameMode::Client)
+		return;
+
+	b2Body* body1 = contact->GetFixtureA()->GetBody();
+	b2Body* body2 = contact->GetFixtureB()->GetBody();
+
+	GameObject* obj1 = reinterpret_cast<GameObject*>(body1->GetUserData());
+	GameObject* obj2 = reinterpret_cast<GameObject*>(body2->GetUserData());
+
+	if (!obj1 || !obj2 || obj1->isExpired() || obj2->isExpired())
+		return;
+
+	b2Vec2 dir1 = body1->GetLinearVelocity(); dir1.Normalize();
+	b2Vec2 dir2 = body2->GetLinearVelocity(); dir2.Normalize();
+
+	if (b2Dot(dir1, dir2) <- 0.9f)
+	{
+		MergeGameObjects e;
+		e.player_id[0] = obj1->player_id;
+		e.object_id[0] = obj1->object_id;
+		e.player_id[1] = obj2->player_id;
+		e.object_id[1] = obj2->object_id;
+		m_app->handle(e, EventSource::GameWorld);
+	}
+}
+
 void GameWorld::setLevelBounds(float width, float height)
 {
 	float hwidth = 0.5f * width;
@@ -281,10 +316,19 @@ bool GameWorld::findNewObjectID(uint16_t player_id, uint16_t& object_id)
 	return true;
 }
 
-void GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id, uint32_t sync_id)
+GameObject* GameWorld::addGameObject(const AddGameObject& e)
+{
+	uint16_t obj_id;
+	if (!findNewObjectID(e.player_id, obj_id))
+		return nullptr;
+
+	return addGameObject(e, obj_id);
+}
+
+GameObject* GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id, uint32_t sync_id)
 {
 	if (e.position_x < 0.f || e.position_x > WORLD_WIDTH || e.position_y < 0.f || e.position_y > WORLD_HEIGHT)
-		return;
+		return nullptr;
 
 	float radius = e.radius;
 	if (radius > MAX_GAME_OBJECT_SIZE)
@@ -323,6 +367,42 @@ void GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id, uint32
 	body->CreateFixture(&fixture);
 
 	body->SetLinearVelocity(b2Vec2(e.velocity_x, e.velocity_y));
+
+	return obj;
+}
+
+void GameWorld::mergeGameObjects(GameObject* obj1, GameObject* obj2)
+{
+	if (!obj1 || !obj2)
+		return;
+
+	b2Body* body1 = obj1->body;
+	b2Body* body2 = obj2->body;
+
+	b2Vec2 force1 = body1->GetLinearVelocity();
+	force1 *= body1->GetMass();
+
+	b2Vec2 force2 = body2->GetLinearVelocity();
+	force2 *= body2->GetMass();
+
+	b2Vec2 velocity = b2Vec2_zero;
+	velocity += force1;
+	velocity += force2;
+	velocity *= 1.f / (body1->GetMass() + body2->GetMass());
+
+	AddGameObject e;
+	e.player_id = (obj1->player_id == obj2->player_id) ? obj1->player_id : 0;
+	e.radius = obj1->radius + obj2->radius;
+	e.position_x = (body1->GetPosition().x + body2->GetPosition().x) / 2;
+	e.position_y = (body1->GetPosition().y + body2->GetPosition().y) / 2;
+	e.velocity_x = velocity.x;
+	e.velocity_y = velocity.y;
+
+	if (addGameObject(e))
+	{
+		obj1->remove();
+		obj2->remove();
+	}
 }
 
 void GameWorld::removeGameObject(uint16_t player_id, uint16_t object_id)

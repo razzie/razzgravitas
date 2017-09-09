@@ -262,6 +262,12 @@ void Application::handle(AddGameObject e, EventSource src)
 	}
 }
 
+void Application::handle(MergeGameObjects e, EventSource src)
+{
+	if (m_mode != GameMode::Client)
+		m_world(e);
+}
+
 void Application::handle(RemoveGameObjectsNearMouse e, EventSource src)
 {
 	m_world(e);

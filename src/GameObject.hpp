@@ -36,6 +36,11 @@ struct GameObject
 	{
 		expiry = std::chrono::time_point<std::chrono::steady_clock>();
 	}
+
+	bool isExpired() const
+	{
+		return (std::chrono::steady_clock::now() > expiry);
+	}
 };
 
 struct GameObjectState

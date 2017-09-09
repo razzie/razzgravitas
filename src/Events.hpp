@@ -141,6 +141,12 @@ struct AddGameObject : public Event<EventType::AddGameObject>
 	}
 };
 
+struct MergeGameObjects : public Event<>
+{
+	uint16_t player_id[2];
+	uint16_t object_id[2];
+};
+
 struct RemoveGameObject : public Event<EventType::RemoveGameObject>
 {
 	uint16_t player_id;
