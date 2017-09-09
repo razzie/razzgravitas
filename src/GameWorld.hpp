@@ -56,6 +56,7 @@ private:
 	bool findNewObjectID(uint16_t player_id, uint16_t& object_id);
 	void addGameObject(const AddGameObject& e, uint16_t object_id, uint32_t sync_id = 0);
 	void removeGameObject(uint16_t player_id, uint16_t object_id);
-	void removeObsoleteGameObjects(uint32_t sync_id);
+	void removeUnsyncedGameObjects(uint32_t sync_id);
+	void removeExpiredGameObjects();
 	void sync(GameObjectState& state, uint32_t sync_id);
 };

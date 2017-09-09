@@ -198,6 +198,7 @@ constexpr uint64_t Hello::calculate()
 		+ (uint64_t)GRAVITY              * 1000
 		+ (uint64_t)MIN_GAME_OBJECT_SIZE * 1000
 		+ (uint64_t)MAX_GAME_OBJECT_SIZE * 1000
+		+ GAME_OBJECT_EXPIRY
 		+ MAX_PLAYERS
 		+ MAX_GAME_OBJECTS_PER_PLAYER
 		+ MAX_GAME_OBJECTS_PER_SYNC
