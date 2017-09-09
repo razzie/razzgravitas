@@ -18,6 +18,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 
 class b2Body;
@@ -29,6 +30,12 @@ struct GameObject
 	float radius;
 	b2Body* body;
 	uint32_t last_sync_id;
+	std::chrono::steady_clock::time_point expiry;
+
+	void remove()
+	{
+		expiry = std::chrono::time_point<std::chrono::steady_clock>();
+	}
 };
 
 struct GameObjectState
