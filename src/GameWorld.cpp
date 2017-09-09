@@ -207,10 +207,7 @@ void GameWorld::operator()(GameObjectSyncRequest e)
 		}
 	}
 
-	if (sync.object_count > 0)
-	{
-		m_app->handle(sync, EventSource::GameWorld);
-	}
+	m_app->handle(sync, EventSource::GameWorld);
 }
 
 void GameWorld::operator()(SwitchPlayer e)
