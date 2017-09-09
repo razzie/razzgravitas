@@ -39,8 +39,9 @@ public:
 	PlayerManager();
 	~PlayerManager();
 	const Player* addPlayer();
+	const Player* addLocalPlayer();
 	const Player* addLocalPlayer(uint16_t player_id);
-	const Player* getLocalPlayer();
+	const Player* getLocalPlayer() const;
 	const Player* findPlayer(const void* data);
 	bool switchPlayer(uint16_t player_id, uint16_t new_player_id);
 	void removePlayer(uint16_t player_id);
@@ -51,7 +52,8 @@ protected:
 
 private:
 	std::mutex m_mutex;
-	Player m_players[MAX_PLAYERS];
-	raz::Bitset<MAX_PLAYERS> m_player_slots;
+	Player m_players[MAX_PLAYERS + 1];
+	raz::Bitset<MAX_PLAYERS + 1> m_player_slots;
 	Player* m_local_player;
+	uint16_t m_last_player_id;
 };

@@ -95,9 +95,6 @@ void GameWorld::operator()()
 
 void GameWorld::operator()(AddGameObject e)
 {
-	if (e.position_x < 0.f || e.position_x > WORLD_WIDTH || e.position_y < 0.f || e.position_y > WORLD_HEIGHT)
-		return;
-
 	std::lock_guard<std::mutex> guard(m_lock);
 
 	uint16_t obj_id;
@@ -285,10 +282,19 @@ bool GameWorld::findNewObjectID(uint16_t player_id, uint16_t& object_id)
 
 void GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id, uint32_t sync_id)
 {
+	if (e.position_x < 0.f || e.position_x > WORLD_WIDTH || e.position_y < 0.f || e.position_y > WORLD_HEIGHT)
+		return;
+
+	float radius = e.radius;
+	if (radius > MAX_GAME_OBJECT_SIZE)
+		radius = MAX_GAME_OBJECT_SIZE;
+	else if (radius < MIN_GAME_OBJECT_SIZE)
+		radius = MIN_GAME_OBJECT_SIZE;
+
 	GameObject* obj = new GameObject();
 	obj->player_id = e.player_id;
 	obj->object_id = object_id;
-	obj->radius = e.radius;
+	obj->radius = radius;
 	obj->last_sync_id = sync_id;
 
 	m_obj_db[e.player_id][object_id] = obj;
@@ -305,7 +311,7 @@ void GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id, uint32
 
 	b2CircleShape shape;
 	shape.m_p.Set(0.f, 0.f);
-	shape.m_radius = e.radius;
+	shape.m_radius = radius;
 
 	b2FixtureDef fixture;
 	fixture.shape = &shape;
@@ -347,7 +353,6 @@ void GameWorld::removeObsoleteGameObjects(uint32_t sync_id)
 
 		body = next_body;
 	}
-
 }
 
 void GameWorld::sync(GameObjectState& state, uint32_t sync_id)

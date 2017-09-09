@@ -80,12 +80,12 @@ void Application::setGameMode(GameMode mode)
 	switch (mode)
 	{
 	case GameMode::SingplePlay:
-		m_window.start(this, m_player_mgr.addLocalPlayer(0)->player_id);
+		m_window.start(this, m_player_mgr.addLocalPlayer()->player_id);
 		m_world.start(this);
 		break;
 
 	case GameMode::Host:
-		m_window.start(this, m_player_mgr.addLocalPlayer(0)->player_id);
+		m_window.start(this, m_player_mgr.addLocalPlayer()->player_id);
 		m_world.start(this);
 		m_network.start(this, NetworkMode::Server, m_cmdline.empty() ? nullptr : m_cmdline.c_str());
 		break;
@@ -104,29 +104,37 @@ void Application::setGameMode(GameMode mode)
 
 bool Application::handleCommand(const std::string& cmd)
 {
-	if (cmd.compare(0, 6, "/host ") == 0 && cmd.size() > 6)
+	// note: direct call to setGameMode causes deadlock
+
+	m_cmdline.clear();
+
+	if (cmd.compare("/single") == 0)
+	{
+		std::thread(&Application::setGameMode, this, GameMode::SingplePlay).detach();
+		return true;
+	}
+	else if (cmd.compare(0, 6, "/host ") == 0 && cmd.size() > 6)
 	{
 		m_cmdline = &cmd[6];
-		std::thread(&Application::setGameMode, this, GameMode::Host).detach(); //setGameMode(GameMode::Host);
+		std::thread(&Application::setGameMode, this, GameMode::Host).detach();
 		return true;
 	}
 	else if (cmd.compare("/host") == 0)
 	{
-		m_cmdline.clear();
-		std::thread(&Application::setGameMode, this, GameMode::Host).detach(); //setGameMode(GameMode::Host);
+		std::thread(&Application::setGameMode, this, GameMode::Host).detach();
 		return true;
 	}
 	else if (cmd.compare(0, 9, "/connect ") == 0 && cmd.size() > 9)
 	{
 		m_cmdline = &cmd[9];
-		std::thread(&Application::setGameMode, this, GameMode::Client).detach(); //setGameMode(GameMode::Client);
+		std::thread(&Application::setGameMode, this, GameMode::Client).detach();
 		return true;
 	}
 	else if (cmd.compare(0, 8, "/player ") == 0 && cmd.size() > 8)
 	{
 		SwitchPlayer e;
 		e.player_id = m_player_mgr.getLocalPlayer()->player_id;
-		e.new_player_id = (uint16_t)(std::stoul(&cmd[8]) - 1);
+		e.new_player_id = (uint16_t)std::stoul(&cmd[8]);
 		handle(e, EventSource::GameWindow);
 		return true;
 	}
