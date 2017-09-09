@@ -16,8 +16,12 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include "GameWindow.hpp"
 #include <ShlObj.h>
+#include <raz/color.hpp>
+#include "GameWindow.hpp"
+
+sf::Vector2u GameWindow::m_last_size = { RESOLUTION_WIDTH, RESOLUTION_HEIGHT };
+sf::Vector2i GameWindow::m_last_position = { -1, -1 };
 
 extern const char* canvas_vert;
 extern const char* canvas_frag;
@@ -71,30 +75,24 @@ GameWindow::GameWindow(IApplication* app, uint16_t player_id) :
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 4;
 
-	std::string title = APP_NAME;
-	switch (m_app->getGameMode())
-	{
-	case GameMode::SingplePlay:
-		title += " (SinglePlay)";
-		break;
-	case GameMode::Host:
-		title += " (Host)";
-		break;
-	case GameMode::Client:
-		title += " (Client)";
-		break;
-	}
-
-	m_window.create(sf::VideoMode(RESOLUTION_WIDTH, RESOLUTION_HEIGHT), title.c_str(), (sf::Style::Resize + sf::Style::Close), settings);
+	m_window.create(sf::VideoMode(m_last_size.x, m_last_size.y), {}, (sf::Style::Resize + sf::Style::Close), settings);
 	m_window.setVerticalSyncEnabled(true);
 	m_window.setKeyRepeatEnabled(false);
+
+	if (m_last_position.x != -1 && m_last_position.y != -1)
+		m_window.setPosition(m_last_position);
 
 	m_world_view.setSize(WORLD_WIDTH, WORLD_HEIGHT);
 	m_world_view.setCenter(m_world_view.getSize().x / 2, m_world_view.getSize().y / 2);
 
+	m_player_colors[0] = sf::Color::Black;
+
 	raz::ColorTable color_table;
 	for (int i = 0; i < MAX_PLAYERS; ++i)
-		m_player_colors[i] = color_table[i];
+	{
+		raz::Color color = color_table[i];
+		m_player_colors[i + 1] = sf::Color(color.r, color.g, color.b);
+	}
 
 	m_game_object_shape.setOutlineThickness(0.2f);
 
@@ -103,7 +101,7 @@ GameWindow::GameWindow(IApplication* app, uint16_t player_id) :
 	m_mouse_shape.setFillColor(sf::Color::Transparent);
 
 	m_clear_rect.setSize(sf::Vector2f(WORLD_WIDTH, WORLD_HEIGHT));
-	m_clear_rect.setFillColor(sf::Color(255, 255, 255, 16));
+	m_clear_rect.setFillColor(sf::Color(255, 255, 255, 8));
 
 	PWSTR font_filename;
 	SHGetKnownFolderPath(FOLDERID_Fonts, 0, NULL, &font_filename);
@@ -123,20 +121,21 @@ GameWindow::GameWindow(IApplication* app, uint16_t player_id) :
 	if (sf::Shader::isAvailable())
 		m_canvas_shader.loadFromMemory(canvas_vert, canvas_frag);
 
-	resize(RESOLUTION_WIDTH, RESOLUTION_HEIGHT);
+	resize(m_window.getSize().x, m_window.getSize().y);
 	setPlayer(player_id);
 }
 
 GameWindow::~GameWindow()
 {
+	m_last_position = m_window.getPosition();
 }
 
 void GameWindow::renderGameObject(float x, float y, float r, float vx, float vy, uint16_t player_id)
 {
 	float outline_radius = m_game_object_shape.getOutlineThickness();
-	raz::Color color = m_player_colors[player_id];
+	sf::Color color = m_player_colors[player_id];
 
-	m_game_object_shape.setOutlineColor(sf::Color(color.r, color.g, color.b));
+	m_game_object_shape.setOutlineColor(color);
 	m_game_object_shape.setFillColor(sf::Color(color.r / 2 + 127, color.g / 2 + 127, color.b / 2 + 127));
 	m_game_object_shape.setPosition(x, y);
 	m_game_object_shape.setRadius(r - outline_radius);
@@ -239,7 +238,7 @@ void GameWindow::operator()()
 			break;
 
 		case sf::Event::MouseButtonPressed:
-			if (event.mouseButton.button == sf::Mouse::Left)
+			if (m_window.hasFocus() && event.mouseButton.button == sf::Mouse::Left)
 			{
 				if (m_mouse_down == false)
 				{
@@ -248,13 +247,17 @@ void GameWindow::operator()()
 				}
 				m_mouse_down = true;
 			}
+			else if (event.mouseButton.button == sf::Mouse::Right)
+			{
+				m_mouse_down = false;
+			}
 			break;
 
 		case sf::Event::MouseButtonReleased:
-			m_mouse_down = false;
 			auto pos = m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window));
-			if (event.mouseButton.button == sf::Mouse::Left)
+			if (event.mouseButton.button == sf::Mouse::Left && m_mouse_down)
 			{
+				m_mouse_down = false;
 				auto last_pos = m_window.mapPixelToCoords(sf::Vector2i(m_mouse_drag_x, m_mouse_drag_y));
 				AddGameObject e;
 				e.position_x = last_pos.x;
@@ -305,8 +308,7 @@ void GameWindow::operator()()
 			Message msg = m_msg_queue.front();
 			m_msg_queue.pop();
 
-			raz::Color color = m_player_colors[msg.player_id];
-			m_msg.setFillColor(sf::Color(color.r, color.g, color.b));
+			m_msg.setFillColor(m_player_colors[msg.player_id]);
 			m_msg.setString(msg.message.c_str());
 		}
 	}
@@ -341,6 +343,9 @@ void GameWindow::operator()(SwitchPlayer e)
 
 void GameWindow::resize(unsigned width, unsigned height)
 {
+	m_last_size.x = width;
+	m_last_size.y = height;
+
 	m_world_view = getLetterboxView(m_world_view, width, height);
 
 	m_ui_view.setSize((float)width, (float)height);
@@ -361,10 +366,36 @@ void GameWindow::setPlayer(uint16_t player_id)
 {
 	m_player_id = player_id;
 
-	raz::Color player_color = m_player_colors[m_player_id];
+	sf::Color player_color = m_player_colors[m_player_id];
+	m_mouse_shape.setOutlineColor(player_color);
+	m_input.setFillColor(player_color);
 
-	m_mouse_shape.setOutlineColor(sf::Color(player_color.r, player_color.g, player_color.b));
-	m_input.setFillColor(sf::Color(player_color.r, player_color.g, player_color.b));
+	updateTitle();
+}
+
+void GameWindow::updateTitle()
+{
+	sf::String title = APP_NAME;
+	title += " (";
+
+	switch (m_app->getGameMode())
+	{
+	case GameMode::SingplePlay:
+		title += "SinglePlay : ";
+		break;
+	case GameMode::Host:
+		title += "Host : ";
+		break;
+	case GameMode::Client:
+		title += "Client : ";
+		break;
+	}
+
+	title += "player ";
+	title += std::to_string(m_player_id);
+	title += ")";
+
+	m_window.setTitle(title);
 }
 
 

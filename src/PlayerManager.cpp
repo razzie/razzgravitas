@@ -18,7 +18,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #include "PlayerManager.hpp"
 
-PlayerManager::PlayerManager()
+PlayerManager::PlayerManager() :
+	m_last_player_id(1)
 {
 	reset();
 }
@@ -47,16 +48,23 @@ const Player* PlayerManager::addPlayer()
 	}
 }
 
+const Player* PlayerManager::addLocalPlayer()
+{
+	return addLocalPlayer(m_last_player_id);
+}
+
 const Player* PlayerManager::addLocalPlayer(uint16_t player_id)
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
 
 	if (m_local_player
-		|| player_id >= MAX_PLAYERS
+		|| player_id > MAX_PLAYERS
 		|| m_player_slots.isset(player_id))
 	{
 		return nullptr;
 	}
+
+	m_last_player_id = player_id;
 
 	m_player_slots.set(player_id);
 	m_local_player = &m_players[player_id];
@@ -64,7 +72,7 @@ const Player* PlayerManager::addLocalPlayer(uint16_t player_id)
 	return m_local_player;
 }
 
-const Player* PlayerManager::getLocalPlayer()
+const Player* PlayerManager::getLocalPlayer() const
 {
 	return m_local_player;
 }
@@ -86,7 +94,7 @@ bool PlayerManager::switchPlayer(uint16_t player_id, uint16_t new_player_id)
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
 
-	if (player_id >= MAX_PLAYERS || new_player_id >= MAX_PLAYERS)
+	if (player_id > MAX_PLAYERS || new_player_id > MAX_PLAYERS)
 		return false;
 
 	if (!m_player_slots.isset(player_id) || m_player_slots.isset(new_player_id))
@@ -98,7 +106,10 @@ bool PlayerManager::switchPlayer(uint16_t player_id, uint16_t new_player_id)
 	std::swap(m_players[player_id].last_updated, m_players[new_player_id].last_updated);
 
 	if (m_local_player && m_local_player->player_id == player_id)
+	{
+		m_last_player_id = new_player_id;
 		m_local_player = &m_players[new_player_id];
+	}
 
 	return true;
 }
@@ -107,7 +118,7 @@ void PlayerManager::removePlayer(uint16_t player_id)
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
 
-	if (player_id >= MAX_PLAYERS)
+	if (player_id > MAX_PLAYERS)
 		return;
 
 	m_player_slots.unset(player_id);
@@ -123,10 +134,12 @@ void PlayerManager::reset()
 	m_player_slots.reset();
 	m_local_player = nullptr;
 
-	for (uint16_t i = 0; i < MAX_PLAYERS; ++i)
+	for (uint16_t i = 0; i < MAX_PLAYERS + 1; ++i)
 	{
 		m_players[i].player_id = i;
 		m_players[i].last_updated = std::chrono::time_point<std::chrono::steady_clock>();
 		m_players[i].data = nullptr;
 	}
+
+	m_player_slots.set(0); // add system player
 }

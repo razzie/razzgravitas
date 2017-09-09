@@ -21,7 +21,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <cstdint>
 #include <queue>
 #include <SFML/Graphics.hpp>
-#include <raz/color.hpp>
 #include <raz/timer.hpp>
 #include "IApplication.hpp"
 
@@ -37,6 +36,9 @@ public:
 	void operator()(SwitchPlayer e);
 
 private:
+	static sf::Vector2u m_last_size;
+	static sf::Vector2i m_last_position;
+
 	IApplication* m_app;
 	sf::RenderWindow m_window;
 	sf::RenderTexture m_canvas;
@@ -47,7 +49,7 @@ private:
 	sf::CircleShape m_game_object_shape;
 	sf::CircleShape m_mouse_shape;
 	sf::RectangleShape m_clear_rect;
-	raz::Color m_player_colors[MAX_PLAYERS];
+	sf::Color m_player_colors[MAX_PLAYERS + 1];
 	uint16_t m_player_id;
 	std::queue<Message> m_msg_queue;
 	raz::Timer m_msg_timer;
@@ -61,4 +63,5 @@ private:
 
 	void resize(unsigned width, unsigned height);
 	void setPlayer(uint16_t player_id);
+	void updateTitle();
 };
