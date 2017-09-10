@@ -252,8 +252,9 @@ void GameWorld::BeginContact(b2Contact* contact)
 
 	b2Vec2 dir1 = body1->GetLinearVelocity(); dir1.Normalize();
 	b2Vec2 dir2 = body2->GetLinearVelocity(); dir2.Normalize();
+	b2Vec2 dist = body1->GetPosition() - body2->GetPosition(); dist.Normalize();
 
-	if (b2Dot(dir1, dir2) <- 0.9f)
+	if (b2Dot(dir1, dist) < -0.9f || b2Dot(dir2, -dist) < -0.9f)
 	{
 		MergeGameObjects e;
 		e.player_id[0] = obj1->player_id;
@@ -373,27 +374,28 @@ void GameWorld::mergeGameObjects(GameObject* obj1, GameObject* obj2)
 	if (!obj1 || !obj2)
 		return;
 
+	float radius = std::sqrt(obj1->radius * obj1->radius + obj2->radius * obj2->radius);
+	if (radius > MAX_GAME_OBJECT_SIZE)
+		return;
+
 	b2Body* body1 = obj1->body;
 	b2Body* body2 = obj2->body;
-
-	b2Vec2 force1 = body1->GetLinearVelocity();
-	force1 *= body1->GetMass();
-
-	b2Vec2 force2 = body2->GetLinearVelocity();
-	force2 *= body2->GetMass();
-
-	b2Vec2 velocity = b2Vec2_zero;
-	velocity += force1;
-	velocity += force2;
-	velocity *= 1.f / (body1->GetMass() + body2->GetMass());
+	b2Vec2 position1 = body1->GetPosition();
+	b2Vec2 position2 = body2->GetPosition();
+	b2Vec2 velocity1 = body1->GetLinearVelocity();
+	b2Vec2 velocity2 = body2->GetLinearVelocity();
+	float mass1 = body1->GetMass();
+	float mass2 = body2->GetMass();
+	float mass_fract = 1.f / (mass1 + mass2);
+	uint16_t player_id = (obj1->player_id == obj2->player_id) ? obj1->player_id : 0;
 
 	AddGameObject e;
-	e.player_id = (obj1->player_id == obj2->player_id) ? obj1->player_id : 0;
-	e.radius = obj1->radius + obj2->radius;
-	e.position_x = (body1->GetPosition().x + body2->GetPosition().x) / 2;
-	e.position_y = (body1->GetPosition().y + body2->GetPosition().y) / 2;
-	e.velocity_x = velocity.x;
-	e.velocity_y = velocity.y;
+	e.player_id = player_id;
+	e.radius = radius;
+	e.position_x = (position1.x * mass1 + position2.x * mass2) * mass_fract;
+	e.position_y = (position1.y * mass1 + position2.y * mass2) * mass_fract;
+	e.velocity_x = (velocity1.x * mass1 + velocity2.x * mass2) * mass_fract;
+	e.velocity_y = (velocity1.y * mass1 + velocity2.y * mass2) * mass_fract;
 
 	if (addGameObject(e))
 	{
