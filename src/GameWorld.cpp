@@ -64,8 +64,6 @@ void GameWorld::operator()()
 	float delta = 0.001f * m_timer.getElapsed();
 	for (m_step_time += delta; m_step_time >= WORLD_STEP; m_step_time -= WORLD_STEP)
 	{
-		removeExpiredGameObjects();
-
 		for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
 		{
 			GameObject* obj = static_cast<GameObject*>(body->GetUserData());
@@ -93,6 +91,7 @@ void GameWorld::operator()()
 		}
 
 		m_world.Step(WORLD_STEP, 8, 3);
+		removeExpiredGameObjects();
 	}
 
 	m_app->handle(this); // render
@@ -366,6 +365,14 @@ GameObject* GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id,
 
 	body->SetLinearVelocity(b2Vec2(e.velocity_x, e.velocity_y));
 
+	if (m_app->getGameMode() == GameMode::Client)
+	{
+		b2Filter filter;
+		filter.categoryBits = 0;
+		filter.maskBits = 0;
+		body->GetFixtureList()->SetFilterData(filter);
+	}
+
 	return obj;
 }
 
@@ -467,6 +474,7 @@ void GameWorld::sync(GameObjectState& state, uint32_t sync_id)
 	{
 		state.apply(obj->body);
 		obj->last_sync_id = sync_id;
+		obj->body->GetFixtureList()->SetFilterData(b2Filter()); // reset filter after first sync
 	}
 	else
 	{
