@@ -47,22 +47,22 @@ GameMode Application::getGameMode() const
 
 int Application::run()
 {
-	auto exit_code_future = m_exit_code.get_future();
+	auto exit_info_future = m_exit.get_future();
 
 	setGameMode(m_mode);
 
-	int exit_code = exit_code_future.get();
+	ExitInfo exit_info = exit_info_future.get();
 
 	m_window.stop();
 	m_world.stop();
 	m_network.stop();
 
-	if (!m_exit_msg.empty())
+	if (!exit_info.exit_message.empty())
 	{
-		MessageBoxA(NULL, m_exit_msg.c_str(), "Exit message", MB_OK | MB_SYSTEMMODAL);
+		MessageBoxA(NULL, exit_info.exit_message.c_str(), "Exit message", MB_OK | MB_SYSTEMMODAL);
 	}
 
-	return exit_code;
+	return exit_info.exit_code;
 }
 
 void Application::setGameMode(GameMode mode)
@@ -149,12 +149,7 @@ PlayerManager* Application::getPlayerManager()
 
 void Application::exit(int code, const char* msg)
 {
-	if (msg)
-	{
-		m_exit_msg = msg;
-	}
-
-	m_exit_code.set_value(code);
+	m_exit.set_value({ code, msg ? msg : "" });
 }
 
 void Application::handle(Connected e, EventSource src)
