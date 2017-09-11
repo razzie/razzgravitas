@@ -246,8 +246,8 @@ void Network::updateClient()
 		return;
 
 	m_data.packet.setMode(raz::SerializationMode::DESERIALIZE);
-	handlePacket(m_data.packet, player);
-	m_timer.reset();
+	if (handlePacket(m_data.packet, player))
+		m_timer.reset();
 }
 
 void Network::updateServer()

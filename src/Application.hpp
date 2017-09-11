@@ -50,6 +50,12 @@ public:
 	virtual void handle(IGameObjectRenderInvoker*);
 
 private:
+	struct ExitInfo
+	{
+		int exit_code;
+		std::string exit_message;
+	};
+
 	Application(int argc, char** argv);
 	int run();
 	void setGameMode(GameMode mode);
@@ -58,8 +64,7 @@ private:
 	GameMode m_mode;
 	PlayerManager m_player_mgr;
 	std::string m_cmdline;
-	std::string m_exit_msg;
-	std::promise<int> m_exit_code;
+	std::promise<ExitInfo> m_exit;
 	raz::Thread<GameWindow> m_window;
 	raz::Thread<GameWorld> m_world;
 	raz::Thread<Network> m_network;
