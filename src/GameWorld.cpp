@@ -107,6 +107,8 @@ void GameWorld::operator()(AddGameObject e)
 
 void GameWorld::operator()(MergeGameObjects e)
 {
+	std::lock_guard<std::mutex> guard(m_lock);
+
 	GameObject* obj1 = m_obj_db[e.player_id[0]][e.object_id[0]];
 	GameObject* obj2 = m_obj_db[e.player_id[1]][e.object_id[1]];
 	mergeGameObjects(obj1, obj2);
@@ -215,6 +217,8 @@ void GameWorld::operator()(GameObjectSyncRequest e)
 
 void GameWorld::operator()(SwitchPlayer e)
 {
+	std::lock_guard<std::mutex> guard(m_lock);
+
 	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
 	{
 		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
@@ -369,14 +373,6 @@ GameObject* GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id,
 	body->CreateFixture(&fixture);
 
 	body->SetLinearVelocity(b2Vec2(e.velocity_x, e.velocity_y));
-
-	if (m_app->getGameMode() == GameMode::Client)
-	{
-		b2Filter filter;
-		filter.categoryBits = 0;
-		filter.maskBits = 0;
-		body->GetFixtureList()->SetFilterData(filter);
-	}
 
 	return obj;
 }
