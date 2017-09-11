@@ -263,8 +263,8 @@ void GameWindow::operator()()
 				e.position_x = last_pos.x;
 				e.position_y = last_pos.y;
 				e.radius = m_mouse_radius;
-				e.velocity_x = pos.x - last_pos.x;
-				e.velocity_y = pos.y - last_pos.y;
+				e.velocity_x = last_pos.x - pos.x;
+				e.velocity_y = last_pos.y - pos.y;
 				e.player_id = m_player_id;
 				m_app->handle(e, EventSource::GameWindow);
 			}
