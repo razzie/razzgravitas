@@ -64,6 +64,8 @@ void GameWorld::operator()()
 	float delta = 0.001f * m_timer.getElapsed();
 	for (m_step_time += delta; m_step_time >= WORLD_STEP; m_step_time -= WORLD_STEP)
 	{
+		removeExpiredGameObjects();
+
 		for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
 		{
 			GameObject* obj = static_cast<GameObject*>(body->GetUserData());
@@ -91,7 +93,6 @@ void GameWorld::operator()()
 		}
 
 		m_world.Step(WORLD_STEP, 8, 3);
-		removeExpiredGameObjects();
 	}
 
 	m_app->handle(this); // render
@@ -187,13 +188,16 @@ void GameWorld::operator()(GameObjectSyncRequest e)
 {
 	std::lock_guard<std::mutex> guard(m_lock);
 
+	auto now = std::chrono::steady_clock::now();
+
 	GameObjectSync sync;
 	sync.sync_id = e.sync_id;
 	sync.object_count = 0;
 
 	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
 	{
-		if (!body->GetUserData())
+		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
+		if (!obj || obj->creation > now)
 			continue;
 
 		sync.object_states[sync.object_count].init(body);
@@ -338,7 +342,8 @@ GameObject* GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id,
 	obj->object_id = object_id;
 	obj->radius = radius;
 	obj->last_sync_id = sync_id;
-	obj->expiry = std::chrono::steady_clock::now() + std::chrono::seconds(GAME_OBJECT_EXPIRY);
+	obj->creation = std::chrono::steady_clock::now();
+	obj->expiry = obj->creation + std::chrono::seconds(GAME_OBJECT_EXPIRY);
 
 	m_obj_db[e.player_id][object_id] = obj;
 	m_obj_slots[e.player_id].set(object_id);
@@ -404,10 +409,11 @@ void GameWorld::mergeGameObjects(GameObject* obj1, GameObject* obj2)
 	e.velocity_x = (velocity1.x * mass1 + velocity2.x * mass2) * mass_fract;
 	e.velocity_y = (velocity1.y * mass1 + velocity2.y * mass2) * mass_fract;
 
-	if (addGameObject(e))
+	if (GameObject* new_obj = addGameObject(e))
 	{
 		obj1->remove();
 		obj2->remove();
+		new_obj->creation = std::chrono::steady_clock::now() + std::chrono::milliseconds(GAME_SYNC_RATE * 2);
 	}
 }
 
@@ -445,9 +451,7 @@ void GameWorld::removeUnsyncedGameObjects(uint32_t sync_id)
 
 void GameWorld::removeExpiredGameObjects()
 {
-	if (m_app->getGameMode() == GameMode::Client)
-		return;
-
+	bool ignore_expiry = m_app->getGameMode() == GameMode::Client;
 	auto now = std::chrono::steady_clock::now();
 
 	for (b2Body* body = m_world.GetBodyList(); body != 0; )
@@ -455,9 +459,12 @@ void GameWorld::removeExpiredGameObjects()
 		b2Body* next_body = body->GetNext();
 
 		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
-		if (obj != 0 && obj->expiry < now)
+		if (obj)
 		{
-			removeGameObject(obj->player_id, obj->object_id);
+			if (!ignore_expiry && obj->expiry < now)
+			{
+				removeGameObject(obj->player_id, obj->object_id);
+			}
 		}
 
 		body = next_body;
@@ -474,7 +481,6 @@ void GameWorld::sync(GameObjectState& state, uint32_t sync_id)
 	{
 		state.apply(obj->body);
 		obj->last_sync_id = sync_id;
-		obj->body->GetFixtureList()->SetFilterData(b2Filter()); // reset filter after first sync
 	}
 	else
 	{

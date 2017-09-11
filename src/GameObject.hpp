@@ -30,6 +30,7 @@ struct GameObject
 	float radius;
 	b2Body* body;
 	uint32_t last_sync_id;
+	std::chrono::steady_clock::time_point creation;
 	std::chrono::steady_clock::time_point expiry;
 
 	void remove()
