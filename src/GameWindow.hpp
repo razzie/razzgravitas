@@ -61,6 +61,7 @@ private:
 	int m_mouse_drag_y;
 	bool m_mouse_down;
 
+	void handleEvent(const sf::Event& event);
 	void resize(unsigned width, unsigned height);
 	void setPlayer(uint16_t player_id);
 	void updateTitle();

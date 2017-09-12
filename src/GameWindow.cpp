@@ -171,114 +171,7 @@ void GameWindow::operator()()
 	sf::Event event;
 	while (m_window.pollEvent(event))
 	{
-		switch (event.type)
-		{
-		case sf::Event::Closed:
-			m_window.close();
-			break;
-
-		case sf::Event::Resized:
-			resize(event.size.width, event.size.height);
-			break;
-
-		case sf::Event::TextEntered:
-			if (event.text.unicode >= 32)
-				m_input.setString(m_input.getString() + event.text.unicode);
-			break;
-
-		case sf::Event::KeyPressed:
-			switch (event.key.code)
-			{
-			case sf::Keyboard::V:
-				if (event.key.control)
-				{
-					if (OpenClipboard(NULL) != FALSE)
-					{
-						HANDLE clip0 = GetClipboardData(CF_UNICODETEXT);
-						if (clip0 != NULL)
-						{
-							wchar_t *c = reinterpret_cast<wchar_t*>(GlobalLock(clip0));
-							m_input.setString(m_input.getString() + sf::String(c));
-							GlobalUnlock(clip0);
-						}
-						CloseClipboard();
-					}
-				}
-				break;
-
-			case sf::Keyboard::BackSpace:
-				if (!m_input.getString().isEmpty())
-				{
-					auto msg = m_input.getString();
-					msg.erase(m_input.getString().getSize() - 1);
-					m_input.setString(msg);
-				}
-				break;
-
-			case sf::Keyboard::Return:
-				{
-					Message e;
-					e.player_id = m_player_id;
-					e.message = m_input.getString().getData();
-					m_app->handle(e, EventSource::GameWindow);
-				}
-				m_input.setString({});
-				break;
-			}
-			break;
-
-		case sf::Event::MouseWheelMoved:
-			m_mouse_radius += 0.2f * event.mouseWheel.delta;
-			if (m_mouse_radius < MIN_GAME_OBJECT_SIZE)
-				m_mouse_radius = MIN_GAME_OBJECT_SIZE;
-			else if (m_mouse_radius > MAX_GAME_OBJECT_SIZE)
-				m_mouse_radius = MAX_GAME_OBJECT_SIZE;
-			m_mouse_shape.setRadius(m_mouse_radius);
-			m_mouse_shape.setOrigin(m_mouse_radius, m_mouse_radius);
-			break;
-
-		case sf::Event::MouseButtonPressed:
-			if (m_window.hasFocus() && event.mouseButton.button == sf::Mouse::Left)
-			{
-				if (m_mouse_down == false)
-				{
-					m_mouse_drag_x = event.mouseButton.x;
-					m_mouse_drag_y = event.mouseButton.y;
-				}
-				m_mouse_down = true;
-			}
-			else if (event.mouseButton.button == sf::Mouse::Right)
-			{
-				m_mouse_down = false;
-			}
-			break;
-
-		case sf::Event::MouseButtonReleased:
-			auto pos = m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window));
-			if (event.mouseButton.button == sf::Mouse::Left && m_mouse_down)
-			{
-				m_mouse_down = false;
-				auto last_pos = m_window.mapPixelToCoords(sf::Vector2i(m_mouse_drag_x, m_mouse_drag_y));
-				AddGameObject e;
-				e.position_x = last_pos.x;
-				e.position_y = last_pos.y;
-				e.radius = m_mouse_radius;
-				e.velocity_x = last_pos.x - pos.x;
-				e.velocity_y = last_pos.y - pos.y;
-				e.player_id = m_player_id;
-				m_app->handle(e, EventSource::GameWindow);
-			}
-			else if (event.mouseButton.button == sf::Mouse::Right)
-			{
-				RemoveGameObjectsNearMouse e;
-				e.position_x = pos.x;
-				e.position_y = pos.y;
-				e.radius = m_mouse_radius;
-				e.player_id = m_player_id;
-				m_app->handle(e, EventSource::GameWindow);
-			}
-			break;
-		}
+		handleEvent(event);
 	}
 
 	if (m_mouse_down)
@@ -339,6 +232,118 @@ void GameWindow::operator()(Message e)
 void GameWindow::operator()(SwitchPlayer e)
 {
 	setPlayer(e.new_player_id);
+}
+
+void GameWindow::handleEvent(const sf::Event& event)
+{
+	switch (event.type)
+	{
+	case sf::Event::Closed:
+		m_window.close();
+		break;
+
+	case sf::Event::Resized:
+		resize(event.size.width, event.size.height);
+		break;
+
+	case sf::Event::TextEntered:
+		if (event.text.unicode >= 32)
+			m_input.setString(m_input.getString() + event.text.unicode);
+		break;
+
+	case sf::Event::KeyPressed:
+		switch (event.key.code)
+		{
+		case sf::Keyboard::V:
+			if (event.key.control)
+			{
+				if (OpenClipboard(NULL) != FALSE)
+				{
+					HANDLE clip0 = GetClipboardData(CF_UNICODETEXT);
+					if (clip0 != NULL)
+					{
+						wchar_t *c = reinterpret_cast<wchar_t*>(GlobalLock(clip0));
+						m_input.setString(m_input.getString() + sf::String(c));
+						GlobalUnlock(clip0);
+					}
+					CloseClipboard();
+				}
+			}
+			break;
+
+		case sf::Keyboard::BackSpace:
+			if (!m_input.getString().isEmpty())
+			{
+				auto msg = m_input.getString();
+				msg.erase(m_input.getString().getSize() - 1);
+				m_input.setString(msg);
+			}
+			break;
+
+		case sf::Keyboard::Return:
+		{
+			Message e;
+			e.player_id = m_player_id;
+			e.message = m_input.getString().getData();
+			m_app->handle(e, EventSource::GameWindow);
+		}
+		m_input.setString({});
+		break;
+		}
+		break;
+
+	case sf::Event::MouseWheelMoved:
+		m_mouse_radius += 0.2f * event.mouseWheel.delta;
+		if (m_mouse_radius < MIN_GAME_OBJECT_SIZE)
+			m_mouse_radius = MIN_GAME_OBJECT_SIZE;
+		else if (m_mouse_radius > MAX_GAME_OBJECT_SIZE)
+			m_mouse_radius = MAX_GAME_OBJECT_SIZE;
+		m_mouse_shape.setRadius(m_mouse_radius);
+		m_mouse_shape.setOrigin(m_mouse_radius, m_mouse_radius);
+		break;
+
+	case sf::Event::MouseButtonPressed:
+		if (m_window.hasFocus() && event.mouseButton.button == sf::Mouse::Left)
+		{
+			if (m_mouse_down == false)
+			{
+				m_mouse_drag_x = event.mouseButton.x;
+				m_mouse_drag_y = event.mouseButton.y;
+			}
+			m_mouse_down = true;
+		}
+		else if (event.mouseButton.button == sf::Mouse::Right)
+		{
+			m_mouse_down = false;
+		}
+		break;
+
+	case sf::Event::MouseButtonReleased:
+		auto pos = m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window));
+		if (event.mouseButton.button == sf::Mouse::Left && m_mouse_down)
+		{
+			m_mouse_down = false;
+			auto last_pos = m_window.mapPixelToCoords(sf::Vector2i(m_mouse_drag_x, m_mouse_drag_y));
+			AddGameObject e;
+			e.position_x = last_pos.x;
+			e.position_y = last_pos.y;
+			e.radius = m_mouse_radius;
+			e.velocity_x = last_pos.x - pos.x;
+			e.velocity_y = last_pos.y - pos.y;
+			e.player_id = m_player_id;
+			m_app->handle(e, EventSource::GameWindow);
+		}
+		else if (event.mouseButton.button == sf::Mouse::Right)
+		{
+			RemoveGameObjectsNearMouse e;
+			e.position_x = pos.x;
+			e.position_y = pos.y;
+			e.radius = m_mouse_radius;
+			e.player_id = m_player_id;
+			m_app->handle(e, EventSource::GameWindow);
+		}
+		break;
+	}
 }
 
 void GameWindow::resize(unsigned width, unsigned height)
