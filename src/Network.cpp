@@ -136,14 +136,16 @@ void Network::operator()(SwitchPlayer e)
 {
 	if (m_mode == NetworkMode::Server)
 	{
-		Packet packet;
-		packet.setType((raz::PacketType)EventType::SwitchPlayer);
-		packet.setMode(raz::SerializationMode::SERIALIZE);
-		packet(e);
-
-		for (auto& client : m_clients)
+		const Player* player = m_app->getPlayerManager()->getPlayer(e.new_player_id);
+		const Client* client = reinterpret_cast<const Client*>(player->data);
+		if (client)
 		{
-			m_server.send(client, packet);
+			Packet packet;
+			packet.setType((raz::PacketType)EventType::SwitchPlayer);
+			packet.setMode(raz::SerializationMode::SERIALIZE);
+			packet(e);
+
+			m_server.send(*client, packet);
 		}
 	}
 	else if (m_mode == NetworkMode::Client)

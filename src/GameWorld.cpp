@@ -191,6 +191,7 @@ void GameWorld::operator()(GameObjectSyncRequest e)
 	std::lock_guard<std::mutex> guard(m_lock);
 
 	auto now = std::chrono::steady_clock::now();
+	int sync_packets_sent = 0;
 
 	GameObjectSync sync;
 	sync.sync_id = e.sync_id;
@@ -209,10 +210,14 @@ void GameWorld::operator()(GameObjectSyncRequest e)
 		{
 			m_app->handle(sync, EventSource::GameWorld);
 			sync.object_count = 0; // reset counter to refill the struct
+			++sync_packets_sent;
 		}
 	}
 
-	m_app->handle(sync, EventSource::GameWorld);
+	if (sync.object_count > 0 || sync_packets_sent == 0)
+	{
+		m_app->handle(sync, EventSource::GameWorld);
+	}
 }
 
 void GameWorld::operator()(SwitchPlayer e)
@@ -234,6 +239,7 @@ void GameWorld::operator()(SwitchPlayer e)
 			m_obj_slots[e.new_player_id].set(obj->object_id);
 
 			obj->player_id = e.new_player_id;
+			obj->creation = std::chrono::steady_clock::now() + std::chrono::milliseconds(GAME_SYNC_RATE * 2);
 		}
 	}
 }

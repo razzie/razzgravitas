@@ -208,14 +208,16 @@ void Application::handle(SwitchPlayer e, EventSource src)
 	{
 		if (m_player_mgr.switchPlayer(e.player_id, e.new_player_id))
 		{
-			m_world(e);
-
 			if (m_mode == GameMode::Host)
+			{
+				m_world(e);
 				m_network(e);
+			}
 			else if (m_mode == GameMode::Client)
+			{
 				m_window(e);
+			}
 		}
-
 	}
 }
 
