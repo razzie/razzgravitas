@@ -72,6 +72,16 @@ const Player* PlayerManager::addLocalPlayer(uint16_t player_id)
 	return m_local_player;
 }
 
+const Player* PlayerManager::getPlayer(uint16_t player_id) const
+{
+	std::lock_guard<std::mutex> guard(m_mutex);
+
+	if (player_id > MAX_PLAYERS || !m_player_slots.isset(player_id))
+		return nullptr;
+	else
+		return &m_players[player_id];
+}
+
 const Player* PlayerManager::getLocalPlayer() const
 {
 	return m_local_player;

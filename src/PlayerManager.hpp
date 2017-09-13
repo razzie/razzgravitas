@@ -41,6 +41,7 @@ public:
 	const Player* addPlayer();
 	const Player* addLocalPlayer();
 	const Player* addLocalPlayer(uint16_t player_id);
+	const Player* getPlayer(uint16_t player_id) const;
 	const Player* getLocalPlayer() const;
 	const Player* findPlayer(const void* data);
 	bool switchPlayer(uint16_t player_id, uint16_t new_player_id);
@@ -51,7 +52,7 @@ protected:
 	void reset();
 
 private:
-	std::mutex m_mutex;
+	mutable std::mutex m_mutex;
 	Player m_players[MAX_PLAYERS + 1];
 	raz::Bitset<MAX_PLAYERS + 1> m_player_slots;
 	Player* m_local_player;
