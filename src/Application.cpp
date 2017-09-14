@@ -138,6 +138,22 @@ bool Application::handleCommand(const std::string& cmd)
 		handle(e, EventSource::GameWindow);
 		return true;
 	}
+	else if (m_mode == GameMode::Host && cmd.compare(0, 13, "/admin enable") == 0)
+	{
+		SwitchPlayer e;
+		e.player_id = m_player_mgr.getLocalPlayer()->player_id;
+		e.new_player_id = 0;
+		m_window(e);
+		return true;
+	}
+	else if (m_mode == GameMode::Host && cmd.compare(0, 14, "/admin disable") == 0)
+	{
+		SwitchPlayer e;
+		e.player_id = 0;
+		e.new_player_id = m_player_mgr.getLocalPlayer()->player_id;
+		m_window(e);
+		return true;
+	}
 
 	return false;
 }

@@ -129,7 +129,8 @@ void GameWorld::operator()(RemoveGameObjectsNearMouse e)
 		{
 			float mouse_dist = (body->GetPosition() - mouse).Length();
 
-			if (obj->player_id == e.player_id && (mouse_dist < e.radius || mouse_dist < obj->radius))
+			if ((obj->player_id == e.player_id || e.player_id == 0)
+				&& (mouse_dist < e.radius || mouse_dist < obj->radius))
 			{
 				RemoveGameObject _e;
 				_e.player_id = obj->player_id;
