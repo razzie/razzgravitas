@@ -60,6 +60,7 @@ private:
 	int m_mouse_drag_x;
 	int m_mouse_drag_y;
 	bool m_mouse_down;
+	bool m_canvas_updated;
 
 	void handleEvent(const sf::Event& event);
 	void resize(unsigned width, unsigned height);

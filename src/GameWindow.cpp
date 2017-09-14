@@ -70,7 +70,8 @@ GameWindow::GameWindow(IApplication* app, uint16_t player_id) :
 	m_mouse_radius(MIN_GAME_OBJECT_SIZE),
 	m_mouse_drag_x(0),
 	m_mouse_drag_y(0),
-	m_mouse_down(false)
+	m_mouse_down(false),
+	m_canvas_updated(false)
 {
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 4;
@@ -149,10 +150,7 @@ void GameWindow::operator()()
 	if (!m_window.isOpen())
 		m_app->exit(0);
 
-	//m_window.clear(sf::Color::White);
 	m_window.setView(m_ui_view);
-
-	m_canvas.draw(m_clear_rect, sf::BlendAdd);
 
 	if (sf::Shader::isAvailable())
 	{
@@ -215,13 +213,18 @@ void GameWindow::operator()()
 	m_window.draw(m_input);
 
 	m_window.display();
+	m_canvas_updated = false;
 }
 
 void GameWindow::operator()(IGameObjectRenderInvoker* world)
 {
-	//m_canvas.setView(m_world_view);
-	world->render(this);
-	m_canvas.display();
+	if (!m_canvas_updated)
+	{
+		m_canvas_updated = true;
+		m_canvas.draw(m_clear_rect, sf::BlendAdd);
+		world->render(this);
+		m_canvas.display();
+	}
 }
 
 void GameWindow::operator()(Message e)
