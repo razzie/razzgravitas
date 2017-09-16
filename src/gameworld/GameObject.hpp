@@ -22,6 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <cstdint>
 
 class b2Body;
+struct GameObjectState;
 
 struct GameObject
 {
@@ -33,45 +34,8 @@ struct GameObject
 	std::chrono::steady_clock::time_point creation;
 	std::chrono::steady_clock::time_point expiry;
 
-	void remove()
-	{
-		expiry = std::chrono::time_point<std::chrono::steady_clock>();
-	}
-
-	bool isExpired() const
-	{
-		return (std::chrono::steady_clock::now() > expiry);
-	}
-};
-
-struct GameObjectState
-{
-	uint16_t player_id;
-	uint16_t object_id;
-	float radius;
-	float position_x;
-	float position_y;
-	float velocity_x;
-	float velocity_y;
-
-	void init(const b2Body* body);
-	void apply(b2Body* body);
-
-	template<class Serializer>
-	void operator()(Serializer& serializer)
-	{
-		serializer(player_id)(object_id)(radius)(position_x)(position_y)(velocity_x)(velocity_y);
-	}
-};
-
-class IGameObjectRenderer
-{
-public:
-	virtual void renderGameObject(float x, float y, float r, float vx, float vy, uint16_t player_id) = 0;
-};
-
-class IGameObjectRenderInvoker
-{
-public:
-	virtual void render(IGameObjectRenderer*) const = 0;
+	void fill(GameObjectState& state) const;
+	void apply(const GameObjectState& state);
+	void remove();
+	bool isExpired() const;
 };

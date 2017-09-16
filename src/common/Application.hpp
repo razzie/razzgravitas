@@ -23,7 +23,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <raz/thread.hpp>
 #include "gamewindow/GameWindow.hpp"
 #include "gameworld/GameWorld.hpp"
-#include "network/Network.hpp"
+#include "network/NetworkClient.hpp"
+#include "network/NetworkServer.hpp"
 #include "common/PlayerManager.hpp"
 #include "common/IApplication.hpp"
 
@@ -36,18 +37,17 @@ public:
 	virtual GameMode getGameMode() const;
 	virtual PlayerManager* getPlayerManager();
 	virtual void exit(int exit_code, const char* msg = nullptr);
-	virtual void handle(Connected e, EventSource src);
-	virtual void handle(Disconnected e, EventSource src);
-	virtual void handle(SwitchPlayer e, EventSource src);
-	virtual void handle(Message e, EventSource src);
-	virtual void handle(AddGameObject e, EventSource src);
-	virtual void handle(MergeGameObjects e, EventSource src);
-	virtual void handle(RemoveGameObjectsNearMouse e, EventSource src);
-	virtual void handle(RemoveGameObject e, EventSource src);
-	virtual void handle(RemovePlayerGameObjects e, EventSource src);
-	virtual void handle(GameObjectSync e, EventSource src);
-	virtual void handle(GameObjectSyncRequest e, EventSource src);
-	virtual void handle(IGameObjectRenderInvoker*);
+	virtual void handle(const Connected& e, EventSource src);
+	virtual void handle(const Disconnected& e, EventSource src);
+	virtual void handle(const SwitchPlayer& e, EventSource src);
+	virtual void handle(const Message& e, EventSource src);
+	virtual void handle(const AddGameObject& e, EventSource src);
+	virtual void handle(const MergeGameObjects& e, EventSource src);
+	virtual void handle(const RemoveGameObjectsNearMouse& e, EventSource src);
+	virtual void handle(const RemoveGameObject& e, EventSource src);
+	virtual void handle(const RemovePlayerGameObjects& e, EventSource src);
+	virtual void handle(const GameObjectSync& e, EventSource src);
+	virtual void handle(const GameObjectSyncRequest& e, EventSource src);
 
 private:
 	struct ExitInfo
@@ -67,5 +67,6 @@ private:
 	std::promise<ExitInfo> m_exit;
 	raz::Thread<GameWindow> m_window;
 	raz::Thread<GameWorld> m_world;
-	raz::Thread<Network> m_network;
+	raz::Thread<NetworkClient> m_network_client;
+	raz::Thread<NetworkServer> m_network_server;
 };

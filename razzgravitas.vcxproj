@@ -89,12 +89,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\common\Application.cpp" />
+    <ClCompile Include="src\gamewindow\GameCanvas.cpp" />
+    <ClCompile Include="src\gamewindow\GameChat.cpp" />
     <ClCompile Include="src\gameworld\GameObject.cpp" />
     <ClCompile Include="src\gamewindow\GameWindow.cpp" />
     <ClCompile Include="src\gameworld\GameWorld.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\network\Network.cpp" />
     <ClCompile Include="src\common\PlayerManager.cpp" />
+    <ClCompile Include="src\network\NetworkClient.cpp" />
+    <ClCompile Include="src\network\NetworkServer.cpp" />
     <ClCompile Include="src\thirdparty\Box2D\Collision\b2BroadPhase.cpp" />
     <ClCompile Include="src\thirdparty\Box2D\Collision\b2CollideCircle.cpp" />
     <ClCompile Include="src\thirdparty\Box2D\Collision\b2CollideEdge.cpp" />
@@ -145,13 +148,17 @@
   <ItemGroup>
     <ClInclude Include="src\common\Application.hpp" />
     <ClInclude Include="src\common\Events.hpp" />
+    <ClInclude Include="src\common\GameObjectState.hpp" />
+    <ClInclude Include="src\gamewindow\GameCanvas.hpp" />
+    <ClInclude Include="src\gamewindow\GameChat.hpp" />
     <ClInclude Include="src\gameworld\GameObject.hpp" />
     <ClInclude Include="src\gamewindow\GameWindow.hpp" />
     <ClInclude Include="src\gameworld\GameWorld.hpp" />
     <ClInclude Include="src\common\IApplication.hpp" />
-    <ClInclude Include="src\network\Network.hpp" />
     <ClInclude Include="src\common\PlayerManager.hpp" />
     <ClInclude Include="src\common\Settings.hpp" />
+    <ClInclude Include="src\network\NetworkClient.hpp" />
+    <ClInclude Include="src\network\NetworkServer.hpp" />
     <ClInclude Include="src\thirdparty\Box2D\Box2D.h" />
     <ClInclude Include="src\thirdparty\Box2D\Collision\b2BroadPhase.h" />
     <ClInclude Include="src\thirdparty\Box2D\Collision\b2Collision.h" />

@@ -21,6 +21,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <chrono>
 #include <cstdint>
 #include <mutex>
+#include <SFML/Graphics/Color.hpp>
 #include <raz/bitset.hpp>
 #include "common/Settings.hpp"
 
@@ -29,6 +30,7 @@ class Application;
 struct Player
 {
 	uint16_t player_id;
+	sf::Color color;
 	mutable std::chrono::steady_clock::time_point last_updated;
 	mutable const void* data;
 };
@@ -46,6 +48,7 @@ public:
 	const Player* findPlayer(const void* data);
 	bool switchPlayer(uint16_t player_id, uint16_t new_player_id);
 	void removePlayer(uint16_t player_id);
+	sf::Color getPlayerColor(uint16_t player_id);
 
 protected:
 	friend class Application;

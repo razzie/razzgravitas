@@ -16,38 +16,23 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include <Box2D/Box2D.h>
-#include "common/GameObjectState.hpp"
-#include "gameworld/GameObject.hpp"
+#pragma once
 
-void GameObject::fill(GameObjectState& state) const
+#include <cstdint>
+
+struct GameObjectState
 {
-	state.player_id = player_id;
-	state.object_id = object_id;
-	state.position_x = body->GetPosition().x;
-	state.position_y = body->GetPosition().y;
-	state.radius = radius;
-	state.velocity_x = body->GetLinearVelocity().x;
-	state.velocity_y = body->GetLinearVelocity().y;
-}
+	uint16_t player_id;
+	uint16_t object_id;
+	float radius;
+	float position_x;
+	float position_y;
+	float velocity_x;
+	float velocity_y;
 
-void GameObject::apply(const GameObjectState& state)
-{
-	b2Vec2 position(state.position_x, state.position_y);
-	b2Vec2 velocity(state.velocity_x, state.velocity_y);
-
-	if ((position - body->GetPosition()).LengthSquared() > velocity.LengthSquared() * 0.25f)
-		body->SetTransform(position, 0.f);
-
-	body->SetLinearVelocity(velocity);
-}
-
-void GameObject::remove()
-{
-	expiry = std::chrono::time_point<std::chrono::steady_clock>();
-}
-
-bool GameObject::isExpired() const
-{
-	return (std::chrono::steady_clock::now() > expiry);
-}
+	template<class Serializer>
+	void operator()(Serializer& serializer)
+	{
+		serializer(player_id)(object_id)(radius)(position_x)(position_y)(velocity_x)(velocity_y);
+	}
+};

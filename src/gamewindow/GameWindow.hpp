@@ -23,15 +23,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <SFML/Graphics.hpp>
 #include <raz/timer.hpp>
 #include "common/IApplication.hpp"
+#include "gamewindow/GameCanvas.hpp"
+#include "gamewindow/GameChat.hpp"
 
-class GameWindow : public IGameObjectRenderer
+class GameWindow
 {
 public:
-	GameWindow(IApplication* app, uint16_t player_id);
+	GameWindow(IApplication* app, const Player* player);
 	~GameWindow();
-	virtual void renderGameObject(float x, float y, float r, float vx, float vy, uint16_t player_id);
 	void operator()(); // loop
-	void operator()(IGameObjectRenderInvoker* world);
+	void operator()(GameObjectSync e);
 	void operator()(Message e);
 	void operator()(SwitchPlayer e);
 
@@ -40,30 +41,10 @@ private:
 	static sf::Vector2i m_last_position;
 
 	IApplication* m_app;
+	const Player* m_player;
 	sf::RenderWindow m_window;
-	sf::RenderTexture m_canvas;
-	sf::View m_world_view;
-	sf::View m_ui_view;
-	sf::Shader m_canvas_shader;
-	sf::Sprite m_canvas_quad;
-	sf::CircleShape m_game_object_shape;
-	sf::CircleShape m_mouse_shape;
-	sf::RectangleShape m_clear_rect;
-	sf::Color m_player_colors[MAX_PLAYERS + 1];
-	uint16_t m_player_id;
-	std::queue<Message> m_msg_queue;
-	raz::Timer m_msg_timer;
-	sf::Font m_font;
-	sf::Text m_msg;
-	sf::Text m_input;
-	float m_mouse_radius;
-	int m_mouse_drag_x;
-	int m_mouse_drag_y;
-	bool m_mouse_down;
-	bool m_canvas_updated;
+	GameCanvas m_canvas;
+	GameChat m_chat;
 
-	void handleEvent(const sf::Event& event);
-	void resize(unsigned width, unsigned height);
-	void setPlayer(uint16_t player_id);
 	void updateTitle();
 };

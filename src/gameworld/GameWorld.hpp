@@ -25,13 +25,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <raz/bitset.hpp>
 #include <raz/timer.hpp>
 #include "common/IApplication.hpp"
+#include "gameworld/GameObject.hpp"
 
-class GameWorld : public IGameObjectRenderInvoker, public b2ContactListener
+class GameWorld : public b2ContactListener
 {
 public:
 	GameWorld(IApplication* app);
 	~GameWorld();
-	virtual void render(IGameObjectRenderer* window) const;
 	void operator()(); // loop
 	void operator()(AddGameObject e);
 	void operator()(MergeGameObjects e);
@@ -46,7 +46,6 @@ public:
 	virtual void BeginContact(b2Contact *contact);
 
 private:
-	mutable std::mutex m_lock;
 	IApplication* m_app;
 	raz::Timer m_timer;
 	float m_step_time;
@@ -54,6 +53,7 @@ private:
 	GameObject* m_obj_db[MAX_PLAYERS][MAX_GAME_OBJECTS_PER_PLAYER];
 	raz::Bitset<MAX_GAME_OBJECTS_PER_PLAYER> m_obj_slots[MAX_PLAYERS];
 	uint32_t m_last_sync_id;
+	uint32_t m_render_counter;
 
 	void setLevelBounds(float width, float height);
 	bool findNewObjectID(uint16_t player_id, uint16_t& object_id);

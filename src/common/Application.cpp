@@ -21,6 +21,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <codecvt>
 #include <Windows.h>
 
+static_assert(MAX_PACKET_SIZE >= sizeof(GameObjectSync), "MAX_PACKET_SIZE is too low");
+static_assert(PING_RATE < CONNECTION_TIMEOUT, "PING_RATE should be lower than CONNECTION_TIMEOUT");
+static_assert(GAME_SYNC_RATE < CONNECTION_TIMEOUT, "GAME_SYNC_RATE should be lower than CONNECTION_TIMEOUT");
+
 int Application::run(int argc, char** argv)
 {
 	return Application(argc, argv).run();
@@ -55,7 +59,8 @@ int Application::run()
 
 	m_window.stop();
 	m_world.stop();
-	m_network.stop();
+	m_network_client.stop();
+	m_network_server.stop();
 
 	if (!exit_info.exit_message.empty())
 	{
@@ -69,30 +74,32 @@ void Application::setGameMode(GameMode mode)
 {
 	m_window.stop();
 	m_world.stop();
-	m_network.stop();
+	m_network_client.stop();
+	m_network_server.stop();
 
 	m_window.clear();
 	m_world.clear();
-	m_network.clear();
+	m_network_client.clear();
+	m_network_server.clear();
 
 	m_player_mgr.reset();
 
 	switch (mode)
 	{
 	case GameMode::SingplePlay:
-		m_window.start(this, m_player_mgr.addLocalPlayer()->player_id);
+		m_window.start(this, m_player_mgr.addLocalPlayer());
 		m_world.start(this);
 		break;
 
 	case GameMode::Host:
-		m_window.start(this, m_player_mgr.addLocalPlayer()->player_id);
+		m_window.start(this, m_player_mgr.addLocalPlayer());
 		m_world.start(this);
-		m_network.start(this, NetworkMode::Server, m_cmdline.empty() ? nullptr : m_cmdline.c_str());
+		m_network_server.start(this, m_cmdline.empty() ? nullptr : m_cmdline.c_str());
 		break;
 
 	case GameMode::Client:
 		m_world.start(this);
-		m_network.start(this, NetworkMode::Client, m_cmdline.c_str());
+		m_network_client.start(this, m_cmdline.c_str());
 		break;
 
 	default:
@@ -168,17 +175,17 @@ void Application::exit(int code, const char* msg)
 	m_exit.set_value({ code, msg ? msg : "" });
 }
 
-void Application::handle(Connected e, EventSource src)
+void Application::handle(const Connected& e, EventSource src)
 {
 	if (m_mode == GameMode::Client)
 	{
 		const Player* player = m_player_mgr.addLocalPlayer(e.player_id);
 		if (player)
-			m_window.start(this, e.player_id);
+			m_window.start(this, player);
 	}
 }
 
-void Application::handle(Disconnected e, EventSource src)
+void Application::handle(const Disconnected& e, EventSource src)
 {
 	if (m_mode == GameMode::Client)
 	{
@@ -203,13 +210,13 @@ void Application::handle(Disconnected e, EventSource src)
 	}
 }
 
-void Application::handle(SwitchPlayer e, EventSource src)
+void Application::handle(const SwitchPlayer& e, EventSource src)
 {
 	if (src == EventSource::GameWindow) // command
 	{
 		if (m_mode == GameMode::Client)
 		{
-			m_network(e);
+			m_network_client(e);
 		}
 		else if (m_player_mgr.switchPlayer(e.player_id, e.new_player_id))
 		{
@@ -217,7 +224,7 @@ void Application::handle(SwitchPlayer e, EventSource src)
 			m_world(e);
 
 			if (m_mode == GameMode::Host)
-				m_network(e);
+				m_network_server(e);
 		}
 	}
 	else if (src == EventSource::Network)
@@ -227,7 +234,7 @@ void Application::handle(SwitchPlayer e, EventSource src)
 			if (m_mode == GameMode::Host)
 			{
 				m_world(e);
-				m_network(e);
+				m_network_server(e);
 			}
 			else if (m_mode == GameMode::Client)
 			{
@@ -237,7 +244,7 @@ void Application::handle(SwitchPlayer e, EventSource src)
 	}
 }
 
-void Application::handle(Message e, EventSource src)
+void Application::handle(const Message& e, EventSource src)
 {
 
 	if (src == EventSource::GameWindow)
@@ -254,7 +261,11 @@ void Application::handle(Message e, EventSource src)
 		if (!is_command)
 		{
 			m_window(e);
-			m_network(e);
+
+			if (m_mode == GameMode::Host)
+				m_network_server(e);
+			else if (m_mode == GameMode::Client)
+				m_network_client(e);
 		}
 	}
 	else
@@ -263,11 +274,11 @@ void Application::handle(Message e, EventSource src)
 	}
 }
 
-void Application::handle(AddGameObject e, EventSource src)
+void Application::handle(const AddGameObject& e, EventSource src)
 {
 	if (m_mode == GameMode::Client)
 	{
-		m_network(e);
+		m_network_client(e);
 	}
 	else
 	{
@@ -275,22 +286,22 @@ void Application::handle(AddGameObject e, EventSource src)
 	}
 }
 
-void Application::handle(MergeGameObjects e, EventSource src)
+void Application::handle(const MergeGameObjects& e, EventSource src)
 {
 	if (m_mode != GameMode::Client)
 		m_world(e);
 }
 
-void Application::handle(RemoveGameObjectsNearMouse e, EventSource src)
+void Application::handle(const RemoveGameObjectsNearMouse& e, EventSource src)
 {
 	m_world(e);
 }
 
-void Application::handle(RemoveGameObject e, EventSource src)
+void Application::handle(const RemoveGameObject& e, EventSource src)
 {
 	if (m_mode == GameMode::Client)
 	{
-		m_network(e);
+		m_network_client(e);
 	}
 	else
 	{
@@ -298,7 +309,7 @@ void Application::handle(RemoveGameObject e, EventSource src)
 	}
 }
 
-void Application::handle(RemovePlayerGameObjects e, EventSource src)
+void Application::handle(const RemovePlayerGameObjects& e, EventSource src)
 {
 	if (m_mode == GameMode::Host)
 	{
@@ -306,27 +317,26 @@ void Application::handle(RemovePlayerGameObjects e, EventSource src)
 	}
 }
 
-void Application::handle(GameObjectSync e, EventSource src)
+void Application::handle(const GameObjectSync& e, EventSource src)
 {
-	if (m_mode == GameMode::Client)
+	if (e.target == GameObjectSync::Target::GameWindow)
+	{
+		m_window(e);
+	}
+	else if (m_mode == GameMode::Client)
 	{
 		m_world(e);
 	}
 	else
 	{
-		m_network(e);
+		m_network_server(e);
 	}
 }
 
-void Application::handle(GameObjectSyncRequest e, EventSource src)
+void Application::handle(const GameObjectSyncRequest& e, EventSource src)
 {
 	if (m_mode == GameMode::Host)
 	{
 		m_world(e);
 	}
-}
-
-void Application::handle(IGameObjectRenderInvoker* world)
-{
-	m_window(world);
 }
