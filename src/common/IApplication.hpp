@@ -34,7 +34,7 @@ enum class GameMode
 class IApplication
 {
 public:
-	// I don't need virtual desctructor
+	// I don't need virtual destructor
 	virtual GameMode getGameMode() const = 0;
 	virtual PlayerManager* getPlayerManager() = 0;
 	virtual void exit(int exit_code, const char* msg = nullptr) = 0;
