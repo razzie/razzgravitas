@@ -22,7 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <string>
 #include <raz/hash.hpp>
 #include "common/Settings.hpp"
-#include "gameworld/GameObject.hpp"
+#include "common/GameObjectState.hpp"
 
 enum class EventType : uint32_t
 {
@@ -179,9 +179,16 @@ struct GameObjectSyncRequest : public Event<>
 
 struct GameObjectSync : public Event<EventType::GameObjectSync>
 {
+	enum Target
+	{
+		GameWindow,
+		Network
+	};
+
 	uint32_t sync_id;
 	uint32_t object_count;
 	GameObjectState object_states[MAX_GAME_OBJECTS_PER_SYNC];
+	Target target; // INTERNAL
 
 	template<class Serializer>
 	void operator()(Serializer& serializer)

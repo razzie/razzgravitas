@@ -27,7 +27,8 @@ GameWorld::GameWorld(IApplication* app) :
 	m_app(app),
 	m_world(b2Vec2(0.f, 0.f)),
 	m_step_time(0.f),
-	m_last_sync_id(0)
+	m_last_sync_id(0),
+	m_render_counter(0)
 {
 	setLevelBounds(WORLD_WIDTH, WORLD_HEIGHT);
 
@@ -41,26 +42,8 @@ GameWorld::~GameWorld()
 {
 }
 
-void GameWorld::render(IGameObjectRenderer* window) const
-{
-	std::lock_guard<std::mutex> guard(m_lock);
-
-	for (const b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
-	{
-		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
-		if (obj == 0)
-			continue;
-
-		b2Vec2 pos = body->GetPosition();
-		b2Vec2 movement = body->GetLinearVelocity();
-		window->renderGameObject(pos.x, pos.y, obj->radius, movement.x, movement.y, obj->player_id);
-	}
-}
-
 void GameWorld::operator()()
 {
-	std::lock_guard<std::mutex> guard(m_lock);
-
 	float delta = 0.001f * m_timer.getElapsed();
 	for (m_step_time += delta; m_step_time >= WORLD_STEP; m_step_time -= WORLD_STEP)
 	{
@@ -95,20 +78,39 @@ void GameWorld::operator()()
 		m_world.Step(WORLD_STEP, 8, 3);
 	}
 
-	m_app->handle(this); // render
+	// render
+	GameObjectSync render;
+	render.sync_id = ++m_render_counter;
+	render.object_count = 0;
+	render.target = GameObjectSync::Target::GameWindow;
+
+	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
+	{
+		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
+		if (!obj)
+			continue;
+
+		obj->fill(render.object_states[render.object_count]);
+		++render.object_count;
+
+		if (render.object_count == MAX_GAME_OBJECTS_PER_SYNC)
+		{
+			m_app->handle(render, EventSource::GameWorld);
+			render.object_count = 0;
+		}
+	}
+
+	if (render.object_count > 0)
+		m_app->handle(render, EventSource::GameWorld);
 }
 
 void GameWorld::operator()(AddGameObject e)
 {
-	std::lock_guard<std::mutex> guard(m_lock);
-
 	addGameObject(e);
 }
 
 void GameWorld::operator()(MergeGameObjects e)
 {
-	std::lock_guard<std::mutex> guard(m_lock);
-
 	GameObject* obj1 = m_obj_db[e.player_id[0]][e.object_id[0]];
 	GameObject* obj2 = m_obj_db[e.player_id[1]][e.object_id[1]];
 	mergeGameObjects(obj1, obj2);
@@ -116,8 +118,6 @@ void GameWorld::operator()(MergeGameObjects e)
 
 void GameWorld::operator()(RemoveGameObjectsNearMouse e)
 {
-	std::lock_guard<std::mutex> guard(m_lock);
-
 	b2Vec2 mouse(e.position_x, e.position_y);
 
 	for (b2Body* body = m_world.GetBodyList(); body != 0; )
@@ -145,15 +145,11 @@ void GameWorld::operator()(RemoveGameObjectsNearMouse e)
 
 void GameWorld::operator()(RemoveGameObject e)
 {
-	std::lock_guard<std::mutex> guard(m_lock);
-
 	removeGameObject(e.player_id, e.object_id);
 }
 
 void GameWorld::operator()(RemovePlayerGameObjects e)
 {
-	std::lock_guard<std::mutex> guard(m_lock);
-
 	for (b2Body* body = m_world.GetBodyList(); body != 0; )
 	{
 		b2Body* next_body = body->GetNext();
@@ -173,8 +169,6 @@ void GameWorld::operator()(RemovePlayerGameObjects e)
 
 void GameWorld::operator()(GameObjectSync e)
 {
-	std::lock_guard<std::mutex> guard(m_lock);
-
 	if (m_last_sync_id != e.sync_id)
 	{
 		removeUnsyncedGameObjects(m_last_sync_id);
@@ -189,14 +183,13 @@ void GameWorld::operator()(GameObjectSync e)
 
 void GameWorld::operator()(GameObjectSyncRequest e)
 {
-	std::lock_guard<std::mutex> guard(m_lock);
-
 	auto now = std::chrono::steady_clock::now();
 	int sync_packets_sent = 0;
 
 	GameObjectSync sync;
 	sync.sync_id = e.sync_id;
 	sync.object_count = 0;
+	sync.target = GameObjectSync::Target::Network;
 
 	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
 	{
@@ -204,7 +197,7 @@ void GameWorld::operator()(GameObjectSyncRequest e)
 		if (!obj || obj->creation > now)
 			continue;
 
-		sync.object_states[sync.object_count].init(body);
+		obj->fill(sync.object_states[sync.object_count]);
 		++sync.object_count;
 
 		if (sync.object_count == MAX_GAME_OBJECTS_PER_SYNC)
@@ -223,8 +216,6 @@ void GameWorld::operator()(GameObjectSyncRequest e)
 
 void GameWorld::operator()(SwitchPlayer e)
 {
-	std::lock_guard<std::mutex> guard(m_lock);
-
 	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
 	{
 		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
@@ -482,7 +473,7 @@ void GameWorld::sync(GameObjectState& state, uint32_t sync_id)
 	GameObject* obj = m_obj_db[state.player_id][state.object_id];
 	if (obj)
 	{
-		state.apply(obj->body);
+		obj->apply(state);
 		obj->last_sync_id = sync_id;
 	}
 	else

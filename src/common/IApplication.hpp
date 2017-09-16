@@ -21,6 +21,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "common/Settings.hpp"
 #include "common/Events.hpp"
 
+struct Player;
 class PlayerManager;
 
 enum class GameMode
@@ -37,16 +38,15 @@ public:
 	virtual GameMode getGameMode() const = 0;
 	virtual PlayerManager* getPlayerManager() = 0;
 	virtual void exit(int exit_code, const char* msg = nullptr) = 0;
-	virtual void handle(Connected e, EventSource src) = 0;
-	virtual void handle(Disconnected e, EventSource src) = 0;
-	virtual void handle(SwitchPlayer e, EventSource src) = 0;
-	virtual void handle(Message e, EventSource src) = 0;
-	virtual void handle(AddGameObject e, EventSource src) = 0;
-	virtual void handle(MergeGameObjects e, EventSource src) = 0;
-	virtual void handle(RemoveGameObjectsNearMouse e, EventSource src) = 0;
-	virtual void handle(RemoveGameObject e, EventSource src) = 0;
-	virtual void handle(RemovePlayerGameObjects e, EventSource src) = 0;
-	virtual void handle(GameObjectSync e, EventSource src) = 0;
-	virtual void handle(GameObjectSyncRequest e, EventSource src) = 0;
-	virtual void handle(IGameObjectRenderInvoker*) = 0;
+	virtual void handle(const Connected& e, EventSource src) = 0;
+	virtual void handle(const Disconnected& e, EventSource src) = 0;
+	virtual void handle(const SwitchPlayer& e, EventSource src) = 0;
+	virtual void handle(const Message& e, EventSource src) = 0;
+	virtual void handle(const AddGameObject& e, EventSource src) = 0;
+	virtual void handle(const MergeGameObjects& e, EventSource src) = 0;
+	virtual void handle(const RemoveGameObjectsNearMouse& e, EventSource src) = 0;
+	virtual void handle(const RemoveGameObject& e, EventSource src) = 0;
+	virtual void handle(const RemovePlayerGameObjects& e, EventSource src) = 0;
+	virtual void handle(const GameObjectSync& e, EventSource src) = 0;
+	virtual void handle(const GameObjectSyncRequest& e, EventSource src) = 0;
 };

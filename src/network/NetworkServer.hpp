@@ -18,7 +18,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
-#include <exception>
 #include <set>
 #include <raz/network.hpp>
 #include <raz/networkbackend.hpp>
@@ -26,24 +25,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <raz/timer.hpp>
 #include "common/IApplication.hpp"
 
-struct Player;
-
-enum NetworkMode
-{
-	Disabled,
-	Client,
-	Server
-};
-
-class Network
+class NetworkServer
 {
 public:
-	Network(IApplication* app, NetworkMode mode, const char* cmdline = nullptr);
-	~Network();
+	NetworkServer(IApplication* app, const char* cmdline);
+	~NetworkServer();
 	void operator()(); // loop
 	void operator()(Message e);
-	void operator()(AddGameObject e);
-	void operator()(RemoveGameObject e);
 	void operator()(GameObjectSync e);
 	void operator()(SwitchPlayer e);
 	void operator()(std::exception& e);
@@ -64,18 +52,12 @@ private:
 
 	raz::NetworkInitializer m_init;
 	IApplication* m_app;
-	NetworkMode m_mode;
-	raz::NetworkClientUDP<MAX_PACKET_SIZE> m_client;
 	raz::NetworkServerUDP<MAX_PACKET_SIZE> m_server;
 	raz::Timer m_timer;
 	raz::Random m_sync_id_gen;
 	Data m_data;
 	std::set<Client, ClientComparator> m_clients;
 
-	void startClient(const char* cmdline);
-	void startServer(const char* cmdline);
-	void updateClient();
-	void updateServer();
 	bool handlePacket(Packet& packet, const Player* sender);
 	void handleHello(Client& client, Packet& packet);
 	void handleConnect(Client& client);
@@ -104,7 +86,7 @@ private:
 			packet.setMode(raz::SerializationMode::DESERIALIZE);
 			packet(e);
 
-			if (m_mode == NetworkMode::Server && !checkPlayer(e, player))
+			if (!checkPlayer(e, player))
 				return false;
 
 			m_app->handle(e, EventSource::Network);

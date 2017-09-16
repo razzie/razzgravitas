@@ -16,38 +16,40 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include <Box2D/Box2D.h>
-#include "common/GameObjectState.hpp"
-#include "gameworld/GameObject.hpp"
+#pragma once
 
-void GameObject::fill(GameObjectState& state) const
+#include <SFML/Graphics.hpp>
+#include "common/IApplication.hpp"
+
+class GameCanvas
 {
-	state.player_id = player_id;
-	state.object_id = object_id;
-	state.position_x = body->GetPosition().x;
-	state.position_y = body->GetPosition().y;
-	state.radius = radius;
-	state.velocity_x = body->GetLinearVelocity().x;
-	state.velocity_y = body->GetLinearVelocity().y;
-}
+public:
+	GameCanvas(IApplication* app, const Player* player);
+	~GameCanvas();
+	void render(sf::RenderTarget& target);
+	void render(const GameObjectState& state);
+	void handle(const sf::Event& e);
+	void handle(const GameObjectSync& e);
+	void handle(const SwitchPlayer& e);
+	void resize(unsigned width, unsigned height);
 
-void GameObject::apply(const GameObjectState& state)
-{
-	b2Vec2 position(state.position_x, state.position_y);
-	b2Vec2 velocity(state.velocity_x, state.velocity_y);
+private:
+	IApplication* m_app;
+	const Player* m_player;
+	sf::View m_ui_view;
+	sf::View m_world_view;
+	sf::RenderTexture m_canvas;
+	sf::Shader m_canvas_shader;
+	sf::Sprite m_canvas_quad;
+	sf::CircleShape m_game_object_shape;
+	sf::CircleShape m_mouse_shape;
+	sf::RectangleShape m_clear_rect;
+	uint32_t m_last_sync_id;
+	float m_mouse_radius;
+	int m_mouse_x;
+	int m_mouse_y;
+	int m_mouse_drag_x;
+	int m_mouse_drag_y;
+	bool m_mouse_down;
 
-	if ((position - body->GetPosition()).LengthSquared() > velocity.LengthSquared() * 0.25f)
-		body->SetTransform(position, 0.f);
-
-	body->SetLinearVelocity(velocity);
-}
-
-void GameObject::remove()
-{
-	expiry = std::chrono::time_point<std::chrono::steady_clock>();
-}
-
-bool GameObject::isExpired() const
-{
-	return (std::chrono::steady_clock::now() > expiry);
-}
+};

@@ -16,11 +16,29 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
+#include <raz/color.hpp>
 #include "common/PlayerManager.hpp"
 
 PlayerManager::PlayerManager() :
 	m_last_player_id(1)
 {
+	raz::ColorTable color_table;
+
+	for (uint16_t i = 0; i < MAX_PLAYERS + 1; ++i)
+	{
+		m_players[i].player_id = i;
+
+		if (i == 0)
+		{
+			m_players[i].color = sf::Color::Black;
+		}
+		else
+		{
+			raz::Color color = color_table[i - 1];
+			m_players[i].color = sf::Color(color.r, color.g, color.b);
+		}
+	}
+
 	reset();
 }
 
@@ -137,6 +155,14 @@ void PlayerManager::removePlayer(uint16_t player_id)
 	player->data = nullptr;
 }
 
+sf::Color PlayerManager::getPlayerColor(uint16_t player_id)
+{
+	if (player_id > MAX_PLAYERS)
+		return sf::Color::Black;
+	else
+		return m_players[player_id].color;
+}
+
 void PlayerManager::reset()
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
@@ -146,7 +172,6 @@ void PlayerManager::reset()
 
 	for (uint16_t i = 0; i < MAX_PLAYERS + 1; ++i)
 	{
-		m_players[i].player_id = i;
 		m_players[i].last_updated = std::chrono::time_point<std::chrono::steady_clock>();
 		m_players[i].data = nullptr;
 	}

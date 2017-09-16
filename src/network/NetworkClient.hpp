@@ -16,38 +16,48 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include <Box2D/Box2D.h>
-#include "common/GameObjectState.hpp"
-#include "gameworld/GameObject.hpp"
+#pragma once
 
-void GameObject::fill(GameObjectState& state) const
+#include "common/IApplication.hpp"
+#include <raz/network.hpp>
+#include <raz/networkbackend.hpp>
+#include <raz/timer.hpp>
+
+class NetworkClient
 {
-	state.player_id = player_id;
-	state.object_id = object_id;
-	state.position_x = body->GetPosition().x;
-	state.position_y = body->GetPosition().y;
-	state.radius = radius;
-	state.velocity_x = body->GetLinearVelocity().x;
-	state.velocity_y = body->GetLinearVelocity().y;
-}
+public:
+	NetworkClient(IApplication* app, const char* cmdline);
+	~NetworkClient();
+	void operator()(); // loop
+	void operator()(Message e);
+	void operator()(AddGameObject e);
+	void operator()(RemoveGameObject e);
+	void operator()(SwitchPlayer e);
+	void operator()(std::exception& e);
 
-void GameObject::apply(const GameObjectState& state)
-{
-	b2Vec2 position(state.position_x, state.position_y);
-	b2Vec2 velocity(state.velocity_x, state.velocity_y);
+private:
+	typedef raz::Packet<MAX_PACKET_SIZE> Packet;
 
-	if ((position - body->GetPosition()).LengthSquared() > velocity.LengthSquared() * 0.25f)
-		body->SetTransform(position, 0.f);
+	raz::NetworkInitializer m_init;
+	IApplication* m_app;
+	raz::NetworkClientUDP<MAX_PACKET_SIZE> m_client;
+	raz::Timer m_timer;
 
-	body->SetLinearVelocity(velocity);
-}
+	bool handlePacket(Packet& packet);
 
-void GameObject::remove()
-{
-	expiry = std::chrono::time_point<std::chrono::steady_clock>();
-}
+	template<class Event>
+	bool tryHandle(Packet& packet)
+	{
+		if (packet.getType() == (raz::PacketType)Event::getEventType())
+		{
+			Event e;
+			packet.setMode(raz::SerializationMode::DESERIALIZE);
+			packet(e);
 
-bool GameObject::isExpired() const
-{
-	return (std::chrono::steady_clock::now() > expiry);
-}
+			m_app->handle(e, EventSource::Network);
+			return true;
+		}
+
+		return false;
+	}
+};
