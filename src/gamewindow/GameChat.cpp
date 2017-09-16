@@ -39,8 +39,6 @@ GameChat::GameChat(IApplication* app, const Player* player) :
 	m_input.setOutlineThickness(0.1f);
 	m_input.setCharacterSize(MESSAGE_CHAR_SIZE);
 	m_input.setFillColor(m_player->color);
-
-	//resize(RESOLUTION_WIDTH, RESOLUTION_HEIGHT);
 }
 
 GameChat::~GameChat()

@@ -57,7 +57,6 @@ static sf::View getLetterboxView(sf::View view, int windowWidth, int windowHeigh
 	return view;
 }
 
-
 #define GLSL(x) "#version 120\n" #x
 
 static const char* canvas_vert = GLSL(
@@ -106,6 +105,7 @@ GameCanvas::GameCanvas(IApplication* app, const Player* player) :
 	m_game_object_shape.setOutlineThickness(0.2f);
 
 	m_mouse_shape.setRadius(m_mouse_radius);
+	m_mouse_shape.setOrigin(m_mouse_radius, m_mouse_radius);
 	m_mouse_shape.setOutlineThickness(0.2f);
 	m_mouse_shape.setFillColor(sf::Color::Transparent);
 	m_mouse_shape.setOutlineColor(player->color);
@@ -115,8 +115,6 @@ GameCanvas::GameCanvas(IApplication* app, const Player* player) :
 
 	if (sf::Shader::isAvailable())
 		m_canvas_shader.loadFromMemory(canvas_vert, canvas_frag);
-
-	//resize(RESOLUTION_WIDTH, RESOLUTION_HEIGHT);
 }
 
 GameCanvas::~GameCanvas()
