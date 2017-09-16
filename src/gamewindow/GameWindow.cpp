@@ -92,6 +92,7 @@ void GameWindow::operator()(SwitchPlayer e)
 	m_player = m_app->getPlayerManager()->getPlayer(e.new_player_id);
 	m_canvas.handle(e);
 	m_chat.handle(e);
+	updateTitle();
 }
 
 void GameWindow::updateTitle()
