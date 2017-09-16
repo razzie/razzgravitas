@@ -21,11 +21,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <future>
 #include <string>
 #include <raz/thread.hpp>
-#include "GameWindow.hpp"
-#include "GameWorld.hpp"
-#include "Network.hpp"
-#include "PlayerManager.hpp"
-#include "IApplication.hpp"
+#include "gamewindow/GameWindow.hpp"
+#include "gameworld/GameWorld.hpp"
+#include "network/Network.hpp"
+#include "common/PlayerManager.hpp"
+#include "common/IApplication.hpp"
 
 class Application : public IApplication
 {

@@ -18,7 +18,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #include <ShlObj.h>
 #include <raz/color.hpp>
-#include "GameWindow.hpp"
+#include "gamewindow/GameWindow.hpp"
 
 sf::Vector2u GameWindow::m_last_size = { RESOLUTION_WIDTH, RESOLUTION_HEIGHT };
 sf::Vector2i GameWindow::m_last_position = { -1, -1 };

@@ -18,35 +18,43 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
-#include "Settings.hpp"
-#include "Events.hpp"
+#include <chrono>
+#include <cstdint>
+#include <mutex>
+#include <raz/bitset.hpp>
+#include "common/Settings.hpp"
 
-class PlayerManager;
+class Application;
 
-enum class GameMode
+struct Player
 {
-	SingplePlay,
-	Host,
-	Client
+	uint16_t player_id;
+	mutable std::chrono::steady_clock::time_point last_updated;
+	mutable const void* data;
 };
 
-class IApplication
+class PlayerManager
 {
 public:
-	// I don't need virtual desctructor
-	virtual GameMode getGameMode() const = 0;
-	virtual PlayerManager* getPlayerManager() = 0;
-	virtual void exit(int exit_code, const char* msg = nullptr) = 0;
-	virtual void handle(Connected e, EventSource src) = 0;
-	virtual void handle(Disconnected e, EventSource src) = 0;
-	virtual void handle(SwitchPlayer e, EventSource src) = 0;
-	virtual void handle(Message e, EventSource src) = 0;
-	virtual void handle(AddGameObject e, EventSource src) = 0;
-	virtual void handle(MergeGameObjects e, EventSource src) = 0;
-	virtual void handle(RemoveGameObjectsNearMouse e, EventSource src) = 0;
-	virtual void handle(RemoveGameObject e, EventSource src) = 0;
-	virtual void handle(RemovePlayerGameObjects e, EventSource src) = 0;
-	virtual void handle(GameObjectSync e, EventSource src) = 0;
-	virtual void handle(GameObjectSyncRequest e, EventSource src) = 0;
-	virtual void handle(IGameObjectRenderInvoker*) = 0;
+	PlayerManager();
+	~PlayerManager();
+	const Player* addPlayer();
+	const Player* addLocalPlayer();
+	const Player* addLocalPlayer(uint16_t player_id);
+	const Player* getPlayer(uint16_t player_id) const;
+	const Player* getLocalPlayer() const;
+	const Player* findPlayer(const void* data);
+	bool switchPlayer(uint16_t player_id, uint16_t new_player_id);
+	void removePlayer(uint16_t player_id);
+
+protected:
+	friend class Application;
+	void reset();
+
+private:
+	mutable std::mutex m_mutex;
+	Player m_players[MAX_PLAYERS + 1];
+	raz::Bitset<MAX_PLAYERS + 1> m_player_slots;
+	Player* m_local_player;
+	uint16_t m_last_player_id;
 };

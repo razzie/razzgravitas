@@ -22,7 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <queue>
 #include <SFML/Graphics.hpp>
 #include <raz/timer.hpp>
-#include "IApplication.hpp"
+#include "common/IApplication.hpp"
 
 class GameWindow : public IGameObjectRenderer
 {

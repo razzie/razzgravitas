@@ -19,7 +19,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <cstring>
 #include <cmath>
 #include <stdexcept>
-#include "GameWorld.hpp"
+#include "gameworld/GameWorld.hpp"
 
 static constexpr double PI = 3.14159265358979323846;
 
