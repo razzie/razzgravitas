@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <Box2D/Box2D.h>
 #include <raz/bitset.hpp>
 #include <raz/timer.hpp>
-#include "IApplication.hpp"
+#include "common/IApplication.hpp"
 
 class GameWorld : public IGameObjectRenderInvoker, public b2ContactListener
 {

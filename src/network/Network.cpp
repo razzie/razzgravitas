@@ -18,8 +18,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #include <ctime>
 #include <cstring>
-#include "Application.hpp"
-#include "Network.hpp"
+#include "common/Application.hpp"
+#include "network/Network.hpp"
 
 static_assert(MAX_PACKET_SIZE >= sizeof(GameObjectSync), "MAX_PACKET_SIZE is too low");
 static_assert(PING_RATE < CONNECTION_TIMEOUT, "PING_RATE should be lower than CONNECTION_TIMEOUT");

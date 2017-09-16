@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <raz/networkbackend.hpp>
 #include <raz/random.hpp>
 #include <raz/timer.hpp>
-#include "IApplication.hpp"
+#include "common/IApplication.hpp"
 
 struct Player;
 

@@ -21,8 +21,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <cstdint>
 #include <string>
 #include <raz/hash.hpp>
-#include "Settings.hpp"
-#include "GameObject.hpp"
+#include "common/Settings.hpp"
+#include "gameworld/GameObject.hpp"
 
 enum class EventType : uint32_t
 {

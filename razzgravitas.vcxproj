@@ -88,13 +88,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Application.cpp" />
-    <ClCompile Include="src\GameObject.cpp" />
-    <ClCompile Include="src\GameWindow.cpp" />
-    <ClCompile Include="src\GameWorld.cpp" />
+    <ClCompile Include="src\common\Application.cpp" />
+    <ClCompile Include="src\gameworld\GameObject.cpp" />
+    <ClCompile Include="src\gamewindow\GameWindow.cpp" />
+    <ClCompile Include="src\gameworld\GameWorld.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\Network.cpp" />
-    <ClCompile Include="src\PlayerManager.cpp" />
+    <ClCompile Include="src\network\Network.cpp" />
+    <ClCompile Include="src\common\PlayerManager.cpp" />
     <ClCompile Include="src\thirdparty\Box2D\Collision\b2BroadPhase.cpp" />
     <ClCompile Include="src\thirdparty\Box2D\Collision\b2CollideCircle.cpp" />
     <ClCompile Include="src\thirdparty\Box2D\Collision\b2CollideEdge.cpp" />
@@ -143,15 +143,15 @@
     <ClCompile Include="src\thirdparty\Box2D\Rope\b2Rope.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Application.hpp" />
-    <ClInclude Include="src\Events.hpp" />
-    <ClInclude Include="src\GameObject.hpp" />
-    <ClInclude Include="src\GameWindow.hpp" />
-    <ClInclude Include="src\GameWorld.hpp" />
-    <ClInclude Include="src\IApplication.hpp" />
-    <ClInclude Include="src\Network.hpp" />
-    <ClInclude Include="src\PlayerManager.hpp" />
-    <ClInclude Include="src\Settings.hpp" />
+    <ClInclude Include="src\common\Application.hpp" />
+    <ClInclude Include="src\common\Events.hpp" />
+    <ClInclude Include="src\gameworld\GameObject.hpp" />
+    <ClInclude Include="src\gamewindow\GameWindow.hpp" />
+    <ClInclude Include="src\gameworld\GameWorld.hpp" />
+    <ClInclude Include="src\common\IApplication.hpp" />
+    <ClInclude Include="src\network\Network.hpp" />
+    <ClInclude Include="src\common\PlayerManager.hpp" />
+    <ClInclude Include="src\common\Settings.hpp" />
     <ClInclude Include="src\thirdparty\Box2D\Box2D.h" />
     <ClInclude Include="src\thirdparty\Box2D\Collision\b2BroadPhase.h" />
     <ClInclude Include="src\thirdparty\Box2D\Collision\b2Collision.h" />
