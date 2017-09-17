@@ -293,6 +293,9 @@
     <None Include="src\thirdparty\SFML\System\Vector2.inl" />
     <None Include="src\thirdparty\SFML\System\Vector3.inl" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\resources.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
