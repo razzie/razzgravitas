@@ -16,6 +16,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
+#include <Windows.h>
 #include "common/PlayerManager.hpp"
 #include "gamewindow/GameWindow.hpp"
 
@@ -34,6 +35,11 @@ GameWindow::GameWindow(IApplication* app, const Player* player) :
 	m_window.create(sf::VideoMode(m_last_size.x, m_last_size.y), {}, (sf::Style::Resize + sf::Style::Close), settings);
 	m_window.setVerticalSyncEnabled(true);
 	m_window.setKeyRepeatEnabled(false);
+
+	HICON icon = LoadIcon(GetModuleHandle(0), "icon");
+	HWND hwnd = static_cast<HWND>(m_window.getSystemHandle());
+	SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
+	SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)icon);
 
 	if (m_last_position.x != -1 && m_last_position.y != -1)
 		m_window.setPosition(m_last_position);
