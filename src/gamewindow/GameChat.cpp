@@ -29,11 +29,6 @@ GameChat::GameChat(IApplication* app, const Player* player) :
 	m_font.loadFromFile(sf::String(font_filename) + "/arial.ttf");
 	CoTaskMemFree(font_filename);
 
-	m_msg.setFont(m_font);
-	m_msg.setOutlineColor(sf::Color::White);
-	m_msg.setOutlineThickness(0.1f);
-	m_msg.setCharacterSize(MESSAGE_CHAR_SIZE);
-
 	m_input.setFont(m_font);
 	m_input.setOutlineColor(sf::Color::White);
 	m_input.setOutlineThickness(0.1f);
@@ -47,26 +42,25 @@ GameChat::~GameChat()
 
 void GameChat::render(sf::RenderTarget& target)
 {
+	target.setView(m_view);
+
 	if (!m_msg_queue.empty())
 	{
+		float y_pos = 10.f;
+		for (auto& msg : m_msg_queue)
+		{
+			msg.setPosition(10.f, y_pos);
+			target.draw(msg);
+			y_pos += MESSAGE_CHAR_SIZE + 2;
+		}
+
 		if (m_msg_timer.peekElapsed() > MESSAGE_TIMEOUT / m_msg_queue.size())
 		{
 			m_msg_timer.reset();
-
-			Message msg = m_msg_queue.front();
-			m_msg_queue.pop();
-
-			m_msg.setFillColor(m_app->getPlayerManager()->getPlayerColor(msg.player_id));
-			m_msg.setString(msg.message.c_str());
+			m_msg_queue.pop_back();
 		}
 	}
-	else if (m_msg_timer.peekElapsed() > MESSAGE_TIMEOUT)
-	{
-		m_msg.setString({});
-	}
 
-	target.setView(m_view);
-	target.draw(m_msg);
 	target.draw(m_input);
 }
 
@@ -128,7 +122,15 @@ void GameChat::handle(const sf::Event& e)
 
 void GameChat::handle(const Message& e)
 {
-	m_msg_queue.push(e);
+	sf::Text msg;
+	msg.setFont(m_font);
+	msg.setFillColor(m_app->getPlayerManager()->getPlayerColor(e.player_id));
+	msg.setOutlineColor(sf::Color::White);
+	msg.setOutlineThickness(0.1f);
+	msg.setCharacterSize(MESSAGE_CHAR_SIZE);
+	msg.setString(e.message.c_str());
+
+	m_msg_queue.push_front(std::move(msg));
 }
 
 void GameChat::handle(const SwitchPlayer& e)
@@ -141,7 +143,5 @@ void GameChat::resize(unsigned width, unsigned height)
 {
 	m_view.setSize((float)width, (float)height);
 	m_view.setCenter(m_view.getSize().x / 2, m_view.getSize().y / 2);
-
-	m_msg.setPosition(10.f, 10.f);
 	m_input.setPosition(10.f, height - MESSAGE_CHAR_SIZE - 10.f);
 }
