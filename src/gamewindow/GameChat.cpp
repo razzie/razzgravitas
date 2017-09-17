@@ -44,7 +44,11 @@ void GameChat::render(sf::RenderTarget& target)
 {
 	target.setView(m_view);
 
-	if (!m_msg_queue.empty())
+	if (m_msg_queue.empty())
+	{
+		m_msg_timer.reset();
+	}
+	else
 	{
 		float y_pos = 10.f;
 		for (auto& msg : m_msg_queue)
