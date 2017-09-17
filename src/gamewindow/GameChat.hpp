@@ -18,7 +18,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
-#include <queue>
+#include <list>
 #include <SFML/Graphics.hpp>
 #include <raz/timer.hpp>
 #include "common/IApplication.hpp"
@@ -38,9 +38,8 @@ private:
 	IApplication* m_app;
 	const Player* m_player;
 	sf::View m_view;
-	std::queue<Message> m_msg_queue;
-	raz::Timer m_msg_timer;
 	sf::Font m_font;
-	sf::Text m_msg;
+	raz::Timer m_msg_timer;
+	std::list<sf::Text> m_msg_queue;
 	sf::Text m_input;
 };
