@@ -84,6 +84,8 @@ void GameWorld::operator()()
 	render.object_count = 0;
 	render.target = GameObjectSync::Target::GameWindow;
 
+	unsigned render_events = 0;
+
 	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
 	{
 		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
@@ -97,10 +99,11 @@ void GameWorld::operator()()
 		{
 			m_app->handle(render, EventSource::GameWorld);
 			render.object_count = 0;
+			++render_events;
 		}
 	}
 
-	if (render.object_count > 0)
+	if (render.object_count > 0 || render_events == 0)
 		m_app->handle(render, EventSource::GameWorld);
 }
 
