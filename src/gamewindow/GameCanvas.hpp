@@ -19,6 +19,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <raz/timer.hpp>
 #include "common/IApplication.hpp"
 
 class GameCanvas
@@ -43,6 +44,7 @@ private:
 	sf::Sprite m_canvas_quad;
 	sf::CircleShape m_game_object_shape;
 	sf::CircleShape m_mouse_shape;
+	raz::Timer m_mouse_idle_timer;
 	sf::RectangleShape m_clear_rect;
 	uint32_t m_last_sync_id;
 	float m_mouse_radius;
@@ -51,5 +53,4 @@ private:
 	int m_mouse_drag_x;
 	int m_mouse_drag_y;
 	bool m_mouse_down;
-
 };

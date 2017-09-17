@@ -148,12 +148,20 @@ void GameCanvas::render(sf::RenderTarget& target)
 		};
 
 		target.draw(line, 2, sf::Lines);
+		target.draw(m_mouse_shape);
 	}
 	else
 	{
-		m_mouse_shape.setPosition(m_canvas.mapPixelToCoords(sf::Vector2i(m_mouse_x, m_mouse_y)));
+		uint64_t mouse_timeout = m_mouse_idle_timer.peekElapsed();
+		if (mouse_timeout < MOUSE_IDLE_TIMEOUT + 1000)
+		{
+			sf::Color color = m_mouse_shape.getOutlineColor();
+			color.a = (mouse_timeout < MOUSE_IDLE_TIMEOUT) ? (sf::Uint8)255 : (sf::Uint8)(255 - (mouse_timeout - MOUSE_IDLE_TIMEOUT) * 255 / 1000);
+			m_mouse_shape.setOutlineColor(color);
+			m_mouse_shape.setPosition(m_canvas.mapPixelToCoords(sf::Vector2i(m_mouse_x, m_mouse_y)));
+			target.draw(m_mouse_shape);
+		}
 	}
-	target.draw(m_mouse_shape);
 }
 
 void GameCanvas::render(const GameObjectState& state)
@@ -191,6 +199,7 @@ void GameCanvas::handle(const sf::Event& e)
 	case sf::Event::MouseMoved:
 		m_mouse_x = e.mouseMove.x;
 		m_mouse_y = e.mouseMove.y;
+		m_mouse_idle_timer.reset();
 		break;
 
 	case sf::Event::MouseButtonPressed:
