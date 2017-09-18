@@ -194,6 +194,7 @@ void GameCanvas::handle(const sf::Event& e)
 			m_mouse_radius = MAX_GAME_OBJECT_SIZE;
 		m_mouse_shape.setRadius(m_mouse_radius);
 		m_mouse_shape.setOrigin(m_mouse_radius, m_mouse_radius);
+		m_mouse_idle_timer.reset();
 		break;
 
 	case sf::Event::MouseMoved:
@@ -216,6 +217,7 @@ void GameCanvas::handle(const sf::Event& e)
 		{
 			m_mouse_down = false;
 		}
+		m_mouse_idle_timer.reset();
 		break;
 
 	case sf::Event::MouseButtonReleased:
@@ -242,6 +244,7 @@ void GameCanvas::handle(const sf::Event& e)
 			e.player_id = m_player->player_id;
 			m_app->handle(e, EventSource::GameWindow);
 		}
+		m_mouse_idle_timer.reset();
 		break;
 	}
 }
