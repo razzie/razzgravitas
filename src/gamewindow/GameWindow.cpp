@@ -30,7 +30,7 @@ GameWindow::GameWindow(IApplication* app, const Player* player) :
 	m_chat(app, player)
 {
 	sf::ContextSettings settings;
-	settings.antialiasingLevel = 4;
+	settings.antialiasingLevel = ANTIALIASING_LEVEL;
 
 	m_window.create(sf::VideoMode(m_last_size.x, m_last_size.y), {}, (sf::Style::Resize + sf::Style::Close), settings);
 	m_window.setVerticalSyncEnabled(true);

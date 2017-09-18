@@ -57,37 +57,6 @@ static sf::View getLetterboxView(sf::View view, int windowWidth, int windowHeigh
 	return view;
 }
 
-#define GLSL(x) "#version 120\n" #x
-
-static const char* canvas_vert = GLSL(
-void main()
-{
-	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
-	gl_FrontColor = gl_Color;
-}
-);
-
-static const char* canvas_frag = GLSL(
-uniform sampler2D texture;
-uniform vec2 resolution;
-
-void main()
-{
-	vec2 h_uv = vec2(0.5 / resolution.x, 0.0);
-	vec2 v_uv = vec2(0.0, 0.5 / resolution.y);
-	vec4 color = vec4(0.0);
-
-	color += texture2D(texture, gl_TexCoord[0].xy - h_uv - v_uv);
-	color += texture2D(texture, gl_TexCoord[0].xy + h_uv - v_uv);
-	color += texture2D(texture, gl_TexCoord[0].xy + h_uv + v_uv);
-	color += texture2D(texture, gl_TexCoord[0].xy - h_uv + v_uv);
-	color /= 4.0;
-
-	gl_FragColor = color;
-}
-);
-
 GameCanvas::GameCanvas(IApplication* app, const Player* player) :
 	m_app(app),
 	m_player(player),
@@ -102,6 +71,8 @@ GameCanvas::GameCanvas(IApplication* app, const Player* player) :
 	m_world_view.setSize(WORLD_WIDTH, WORLD_HEIGHT);
 	m_world_view.setCenter(m_world_view.getSize().x / 2, m_world_view.getSize().y / 2);
 
+	m_canvas.setSmooth(true);
+
 	m_game_object_shape.setOutlineThickness(0.2f);
 
 	m_mouse_shape.setRadius(m_mouse_radius);
@@ -112,9 +83,6 @@ GameCanvas::GameCanvas(IApplication* app, const Player* player) :
 
 	m_clear_rect.setSize(sf::Vector2f(WORLD_WIDTH, WORLD_HEIGHT));
 	m_clear_rect.setFillColor(sf::Color(255, 255, 255, 1));
-
-	if (sf::Shader::isAvailable())
-		m_canvas_shader.loadFromMemory(canvas_vert, canvas_frag);
 }
 
 GameCanvas::~GameCanvas()
@@ -124,17 +92,7 @@ GameCanvas::~GameCanvas()
 void GameCanvas::render(sf::RenderTarget& target)
 {
 	target.setView(m_ui_view);
-	if (sf::Shader::isAvailable())
-	{
-		auto rect = m_canvas_quad.getTextureRect();
-		m_canvas_shader.setUniform("texture", sf::Shader::CurrentTexture);
-		m_canvas_shader.setUniform("resolution", sf::Vector2f((float)rect.width, (float)rect.height));
-		target.draw(m_canvas_quad, &m_canvas_shader);
-	}
-	else
-	{
-		target.draw(m_canvas_quad);
-	}
+	target.draw(m_canvas_quad);
 
 	target.setView(m_world_view);
 	if (m_mouse_down)
@@ -276,7 +234,10 @@ void GameCanvas::resize(unsigned width, unsigned height)
 	m_ui_view.setSize((float)width, (float)height);
 	m_ui_view.setCenter(m_ui_view.getSize().x / 2, m_ui_view.getSize().y / 2);
 
-	m_canvas.create(width, height);
+	sf::ContextSettings settings;
+	settings.antialiasingLevel = ANTIALIASING_LEVEL;
+
+	m_canvas.create(width, height, settings);
 	m_canvas.clear(sf::Color::White);
 	m_canvas.setView(m_world_view);
 

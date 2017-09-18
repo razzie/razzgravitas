@@ -40,7 +40,6 @@ private:
 	sf::View m_ui_view;
 	sf::View m_world_view;
 	sf::RenderTexture m_canvas;
-	sf::Shader m_canvas_shader;
 	sf::Sprite m_canvas_quad;
 	sf::CircleShape m_game_object_shape;
 	sf::CircleShape m_mouse_shape;
