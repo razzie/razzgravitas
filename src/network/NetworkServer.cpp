@@ -221,7 +221,7 @@ void NetworkServer::handleDisconnect(Client& client)
 			if (player->data == &(*it))
 			{
 				m_clients.erase(it);
-				return;
+				break;
 			}
 		}
 		m_app->getPlayerManager()->removePlayer(player->player_id);
