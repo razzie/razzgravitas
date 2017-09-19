@@ -28,13 +28,19 @@ public:
 	GameCanvas(IApplication* app, const Player* player);
 	~GameCanvas();
 	void render(sf::RenderTarget& target);
-	void render(const GameObjectState& state);
 	void handle(const sf::Event& e);
 	void handle(const GameObjectSync& e);
 	void handle(const SwitchPlayer& e);
 	void resize(unsigned width, unsigned height);
 
 private:
+	struct RenderJob
+	{
+		uint32_t sync_id = 0;
+		uint32_t object_count = 0;
+		GameObjectState object_states[MAX_GAME_OBJECTS];
+	};
+
 	IApplication* m_app;
 	const Player* m_player;
 	sf::View m_ui_view;
@@ -45,11 +51,15 @@ private:
 	sf::CircleShape m_mouse_shape;
 	raz::Timer m_mouse_idle_timer;
 	sf::RectangleShape m_clear_rect;
-	uint32_t m_last_sync_id;
+	RenderJob m_job;
 	float m_mouse_radius;
 	int m_mouse_x;
 	int m_mouse_y;
 	int m_mouse_drag_x;
 	int m_mouse_drag_y;
 	bool m_mouse_down;
+	bool m_awaiting_render;
+
+	void render(const GameObjectState& state);
+	void render(const RenderJob& job);
 };

@@ -60,13 +60,13 @@ static sf::View getLetterboxView(sf::View view, int windowWidth, int windowHeigh
 GameCanvas::GameCanvas(IApplication* app, const Player* player) :
 	m_app(app),
 	m_player(player),
-	m_last_sync_id(0),
 	m_mouse_radius(MIN_GAME_OBJECT_SIZE),
 	m_mouse_x(0),
 	m_mouse_y(0),
 	m_mouse_drag_x(0),
 	m_mouse_drag_y(0),
-	m_mouse_down(false)
+	m_mouse_down(false),
+	m_awaiting_render(true)
 {
 	m_world_view.setSize(WORLD_WIDTH, WORLD_HEIGHT);
 	m_world_view.setCenter(m_world_view.getSize().x / 2, m_world_view.getSize().y / 2);
@@ -82,7 +82,7 @@ GameCanvas::GameCanvas(IApplication* app, const Player* player) :
 	m_mouse_shape.setOutlineColor(player->color);
 
 	m_clear_rect.setSize(sf::Vector2f(WORLD_WIDTH, WORLD_HEIGHT));
-	m_clear_rect.setFillColor(sf::Color(255, 255, 255, 1));
+	m_clear_rect.setFillColor(sf::Color(255, 255, 255, 8));
 }
 
 GameCanvas::~GameCanvas()
@@ -120,6 +120,8 @@ void GameCanvas::render(sf::RenderTarget& target)
 			target.draw(m_mouse_shape);
 		}
 	}
+
+	m_awaiting_render = true;
 }
 
 void GameCanvas::render(const GameObjectState& state)
@@ -134,6 +136,16 @@ void GameCanvas::render(const GameObjectState& state)
 	m_game_object_shape.setOrigin(state.radius - outline_radius, state.radius - outline_radius);
 
 	m_canvas.draw(m_game_object_shape);
+}
+
+void GameCanvas::render(const RenderJob& job)
+{
+	m_canvas.draw(m_clear_rect, sf::BlendAdd);
+
+	for (uint32_t i = 0; i < job.object_count; ++i)
+		render(job.object_states[i]);
+
+	m_canvas.display();
 }
 
 void GameCanvas::handle(const sf::Event& e)
@@ -209,16 +221,22 @@ void GameCanvas::handle(const sf::Event& e)
 
 void GameCanvas::handle(const GameObjectSync& e)
 {
-	if (e.sync_id != m_last_sync_id)
+	if (e.sync_id != m_job.sync_id)
 	{
-		m_canvas.display();
+		if (m_awaiting_render)
+		{
+			render(m_job);
+			m_awaiting_render = false;
+		}
 
-		m_last_sync_id = e.sync_id;
-		m_canvas.draw(m_clear_rect, sf::BlendAdd);
+		m_job.sync_id = e.sync_id;
+		m_job.object_count = 0;
 	}
 
 	for (uint32_t i = 0; i < e.object_count; ++i)
-		render(e.object_states[i]);
+	{
+		m_job.object_states[m_job.object_count++] = e.object_states[i];
+	}
 }
 
 void GameCanvas::handle(const SwitchPlayer& e)
