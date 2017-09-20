@@ -157,11 +157,11 @@ void GameCanvas::handle(const sf::Event& e)
 		break;
 
 	case sf::Event::MouseWheelMoved:
-		m_mouse_radius += 0.2f * e.mouseWheel.delta;
+		m_mouse_radius += 0.1f * e.mouseWheel.delta;
 		if (m_mouse_radius < MIN_GAME_OBJECT_SIZE)
 			m_mouse_radius = MIN_GAME_OBJECT_SIZE;
-		else if (m_mouse_radius > MAX_GAME_OBJECT_SIZE)
-			m_mouse_radius = MAX_GAME_OBJECT_SIZE;
+		else if (m_mouse_radius > MAX_GAME_OBJECT_CREATION_SIZE)
+			m_mouse_radius = MAX_GAME_OBJECT_CREATION_SIZE;
 		m_mouse_shape.setRadius(m_mouse_radius);
 		m_mouse_shape.setOrigin(m_mouse_radius, m_mouse_radius);
 		m_mouse_idle_timer.reset();
