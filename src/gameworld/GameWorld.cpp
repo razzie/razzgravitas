@@ -23,6 +23,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 static constexpr double PI = 3.14159265358979323846;
 
+static std::chrono::milliseconds getGameObjectDuration(float radius)
+{
+	float t = 1.f - ((radius - MIN_GAME_OBJECT_SIZE) / (MAX_GAME_OBJECT_SIZE - MIN_GAME_OBJECT_SIZE));
+	std::chrono::milliseconds::rep ms = (std::chrono::milliseconds::rep)(1000 * (t * (MAX_GAME_OBJECT_DURATION - MIN_GAME_OBJECT_DURATION) + MIN_GAME_OBJECT_DURATION));
+	return std::chrono::milliseconds(ms);
+}
+
 GameWorld::GameWorld(IApplication* app) :
 	m_app(app),
 	m_world(b2Vec2(0.f, 0.f)),
@@ -351,7 +358,7 @@ GameObject* GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id,
 	obj->radius = radius;
 	obj->last_sync_id = sync_id;
 	obj->creation = std::chrono::steady_clock::now();
-	obj->expiry = obj->creation + std::chrono::seconds(GAME_OBJECT_EXPIRY);
+	obj->expiry = obj->creation + getGameObjectDuration(radius);
 
 	m_obj_db[e.player_id][object_id] = obj;
 	m_obj_slots[e.player_id].set(object_id);
