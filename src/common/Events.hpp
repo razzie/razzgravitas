@@ -206,11 +206,12 @@ constexpr uint64_t Hello::calculate()
 	return (raz::hash(APP_NAME)
 		+ WORLD_WIDTH
 		+ WORLD_HEIGHT
-		+ (uint64_t)WORLD_SCALE          * 1000
-		+ (uint64_t)WORLD_STEP           * 1000
-		+ (uint64_t)GRAVITY              * 1000
-		+ (uint64_t)MIN_GAME_OBJECT_SIZE * 1000
-		+ (uint64_t)MAX_GAME_OBJECT_SIZE * 1000
+		+ (uint64_t)WORLD_SCALE                   * 1000
+		+ (uint64_t)WORLD_STEP                    * 1000
+		+ (uint64_t)GRAVITY                       * 1000
+		+ (uint64_t)MIN_GAME_OBJECT_SIZE          * 1000
+		+ (uint64_t)MAX_GAME_OBJECT_CREATION_SIZE * 1000
+		+ (uint64_t)MAX_GAME_OBJECT_SIZE          * 1000
 		+ GAME_OBJECT_EXPIRY
 		+ MAX_PLAYERS
 		+ MAX_GAME_OBJECTS_PER_PLAYER

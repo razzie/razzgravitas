@@ -109,6 +109,9 @@ void GameWorld::operator()()
 
 void GameWorld::operator()(AddGameObject e)
 {
+	if (e.radius > MAX_GAME_OBJECT_CREATION_SIZE)
+		e.radius = MAX_GAME_OBJECT_CREATION_SIZE;
+
 	addGameObject(e);
 }
 
