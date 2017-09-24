@@ -20,11 +20,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <cstdio>
 #include <Windows.h>
 
+int main(int argc, char** argv)
+{
+	return Application::run(argc, argv);
+}
+
 int CALLBACK WinMain(
 	_In_ HINSTANCE hInstance,
 	_In_ HINSTANCE hPrevInstance,
 	_In_ LPSTR     lpCmdLine,
 	_In_ int       nCmdShow)
 {
-	return Application::run(__argc, __argv);
+	return main(__argc, __argv);
 }
