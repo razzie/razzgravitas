@@ -408,6 +408,14 @@ void GameWorld::mergeGameObjects(GameObject* obj1, GameObject* obj2)
 	float mass_fract = 1.f / (mass1 + mass2);
 	uint16_t player_id = (obj1->player_id == obj2->player_id) ? obj1->player_id : 0;
 
+	if (player_id == 0)
+	{
+		if (obj1->radius >= obj2->radius * 2.f)
+			player_id = obj1->player_id;
+		else if (obj2->radius >= obj1->radius * 2.f)
+			player_id = obj2->player_id;
+	}
+
 	AddGameObject e;
 	e.player_id = player_id;
 	e.radius = radius;
