@@ -17,7 +17,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
 #include "common/Application.hpp"
-#include "common/Settings.hpp"
+#include "common/Config.hpp"
 #include <codecvt>
 #include <Windows.h>
 

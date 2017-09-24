@@ -23,7 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <mutex>
 #include <SFML/Graphics/Color.hpp>
 #include <raz/bitset.hpp>
-#include "common/Settings.hpp"
+#include "common/Config.hpp"
 
 class Application;
 

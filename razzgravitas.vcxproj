@@ -156,7 +156,7 @@
     <ClInclude Include="src\gameworld\GameWorld.hpp" />
     <ClInclude Include="src\common\IApplication.hpp" />
     <ClInclude Include="src\common\PlayerManager.hpp" />
-    <ClInclude Include="src\common\Settings.hpp" />
+    <ClInclude Include="src\common\Config.hpp" />
     <ClInclude Include="src\network\NetworkClient.hpp" />
     <ClInclude Include="src\network\NetworkServer.hpp" />
     <ClInclude Include="src\thirdparty\Box2D\Box2D.h" />
