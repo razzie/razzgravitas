@@ -156,7 +156,7 @@ void NetworkServer::handleHello(Client& client, Packet& packet)
 		packet.setMode(raz::SerializationMode::DESERIALIZE);
 		packet(e);
 
-		if (e.checksum == Hello::calculate())
+		if (e.build_hash == Hello::unique_build_hash())
 		{
 			handleConnect(client);
 		}

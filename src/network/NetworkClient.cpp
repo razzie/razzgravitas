@@ -36,7 +36,7 @@ NetworkClient::NetworkClient(IApplication* app, const char* cmdline) :
 	if (m_client.getBackend().open(host, port))
 	{
 		Hello e;
-		e.checksum = Hello::calculate();
+		e.build_hash = Hello::unique_build_hash();
 
 		Packet packet;
 		packet.setType((raz::PacketType)EventType::Hello);

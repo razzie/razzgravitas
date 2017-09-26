@@ -56,14 +56,17 @@ struct Event
 
 struct Hello : public Event<EventType::Hello>
 {
-	uint64_t checksum;
+	uint64_t build_hash;
 
-	static constexpr uint64_t calculate();
+	static constexpr uint64_t unique_build_hash()
+	{
+		return raz::hash(APP_NAME __DATE__  __TIME__);
+	}
 
 	template<class Serializer>
 	void operator()(Serializer& serializer)
 	{
-		serializer(checksum);
+		serializer(build_hash);
 	}
 };
 
@@ -200,44 +203,3 @@ struct GameObjectSync : public Event<EventType::GameObjectSync>
 			serializer(object_states[i]);
 	}
 };
-
-constexpr uint64_t Hello::calculate()
-{
-	return (raz::hash(APP_NAME)
-		+ WORLD_WIDTH
-		+ WORLD_HEIGHT
-		+ (uint64_t)WORLD_SCALE                   * 1000
-		+ (uint64_t)WORLD_STEP                    * 1000
-		+ (uint64_t)GRAVITY                       * 1000
-		+ (uint64_t)MIN_GAME_OBJECT_SIZE          * 1000
-		+ (uint64_t)MAX_GAME_OBJECT_CREATION_SIZE * 1000
-		+ (uint64_t)MAX_GAME_OBJECT_SIZE          * 1000
-		+ MIN_GAME_OBJECT_DURATION
-		+ MAX_GAME_OBJECT_DURATION
-		+ MAX_PLAYERS
-		+ MAX_GAME_OBJECTS_PER_PLAYER
-		+ MAX_GAME_OBJECTS_PER_SYNC
-		+ GAME_SYNC_RATE
-		+ PING_RATE
-		+ CONNECTION_TIMEOUT
-
-		+ (uint64_t)EventType::Hello
-		+ (uint64_t)EventType::Ping
-		+ (uint64_t)EventType::Connected
-		+ (uint64_t)EventType::Disconnected
-		+ (uint64_t)EventType::SwitchPlayer
-		+ (uint64_t)EventType::Message
-		+ (uint64_t)EventType::AddGameObject
-		+ (uint64_t)EventType::RemoveGameObject
-		+ (uint64_t)EventType::GameObjectSync
-
-		+ sizeof(Hello)
-		+ sizeof(Ping)
-		+ sizeof(Connected)
-		+ sizeof(Disconnected)
-		+ sizeof(SwitchPlayer)
-		+ sizeof(Message)
-		+ sizeof(AddGameObject)
-		+ sizeof(RemoveGameObject)
-		+ sizeof(GameObjectSync));
-}
