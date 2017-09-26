@@ -130,8 +130,9 @@ bool PlayerManager::switchPlayer(uint16_t player_id, uint16_t new_player_id)
 
 	m_player_slots.set(new_player_id);
 	m_player_slots.unset(player_id);
-	std::swap(m_players[player_id].data, m_players[new_player_id].data);
 	std::swap(m_players[player_id].last_updated, m_players[new_player_id].last_updated);
+	std::swap(m_players[player_id].highscore, m_players[new_player_id].highscore);
+	std::swap(m_players[player_id].data, m_players[new_player_id].data);
 
 	if (m_local_player && m_local_player->player_id == player_id)
 	{
@@ -152,6 +153,7 @@ void PlayerManager::removePlayer(uint16_t player_id)
 	m_player_slots.unset(player_id);
 	Player* player = &m_players[player_id];
 	player->last_updated = std::chrono::time_point<std::chrono::steady_clock>();
+	player->highscore = 0;
 	player->data = nullptr;
 }
 
@@ -172,8 +174,10 @@ void PlayerManager::reset()
 
 	for (uint16_t i = 0; i < MAX_PLAYERS + 1; ++i)
 	{
-		m_players[i].last_updated = std::chrono::time_point<std::chrono::steady_clock>();
-		m_players[i].data = nullptr;
+		Player* player = &m_players[i];
+		player->last_updated = std::chrono::time_point<std::chrono::steady_clock>();
+		player->highscore = 0;
+		player->data = nullptr;
 	}
 
 	m_player_slots.set(0); // add system player

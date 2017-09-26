@@ -32,6 +32,7 @@ struct Player
 	uint16_t player_id;
 	sf::Color color;
 	mutable std::chrono::steady_clock::time_point last_updated;
+	mutable uint32_t highscore;
 	mutable const void* data;
 };
 
