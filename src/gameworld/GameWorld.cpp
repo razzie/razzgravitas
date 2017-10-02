@@ -77,8 +77,15 @@ void GameWorld::operator()()
 				float force = (GRAVITY * body->GetMass() * body2->GetMass()) / dist;
 				b2Vec2 force_vect(std::cos(angle) * force, std::sin(angle) * force);
 
-				body->ApplyForce(force_vect, body->GetPosition(), true);
-				body2->ApplyForce(-force_vect, body2->GetPosition(), true);
+				body->ApplyForceToCenter(force_vect, true);
+				body2->ApplyForceToCenter(-force_vect, true);
+			}
+
+			if (obj->player_id == 0)
+			{
+				b2Vec2 root_p(obj->root_position_x, obj->root_position_y);
+				b2Vec2 force_vect = root_p - p;
+				body->ApplyForceToCenter(force_vect, true);
 			}
 		}
 
@@ -357,6 +364,8 @@ GameObject* GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id,
 	obj->object_id = object_id;
 	obj->radius = radius;
 	obj->last_sync_id = sync_id;
+	obj->root_position_x = e.position_x;
+	obj->root_position_y = e.position_y;
 	obj->creation = std::chrono::steady_clock::now();
 	obj->expiry = obj->creation + getGameObjectDuration(radius);
 
@@ -405,6 +414,11 @@ void GameWorld::mergeGameObjects(GameObject* obj1, GameObject* obj2)
 	b2Vec2 velocity2 = body2->GetLinearVelocity();
 	float mass1 = body1->GetMass();
 	float mass2 = body2->GetMass();
+
+	if (velocity1.LengthSquared() < GAME_OBJECT_MERGE_VELOCITY_THRESHOLD
+		&& velocity2.LengthSquared() < GAME_OBJECT_MERGE_VELOCITY_THRESHOLD)
+		return;
+
 	float mass_fract = 1.f / (mass1 + mass2);
 	uint16_t player_id = (obj1->player_id == obj2->player_id) ? obj1->player_id : 0;
 
