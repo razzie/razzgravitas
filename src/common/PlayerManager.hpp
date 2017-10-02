@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "common/Config.hpp"
 
 class Application;
+struct Highscore;
 
 struct Player
 {
@@ -50,6 +51,7 @@ public:
 	bool switchPlayer(uint16_t player_id, uint16_t new_player_id);
 	void removePlayer(uint16_t player_id);
 	sf::Color getPlayerColor(uint16_t player_id);
+	void getHighscore(Highscore& highscore) const;
 
 protected:
 	friend class Application;

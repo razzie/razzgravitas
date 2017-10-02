@@ -17,6 +17,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
 #include <raz/color.hpp>
+#include "common/Events.hpp"
 #include "common/PlayerManager.hpp"
 
 PlayerManager::PlayerManager() :
@@ -163,6 +164,19 @@ sf::Color PlayerManager::getPlayerColor(uint16_t player_id)
 		return sf::Color::Black;
 	else
 		return m_players[player_id].color;
+}
+
+void PlayerManager::getHighscore(Highscore& highscore) const
+{
+	std::lock_guard<std::mutex> guard(m_mutex);
+
+	for (size_t i = 0; i < MAX_PLAYERS; ++i)
+	{
+		if (m_player_slots.isset(i))
+			highscore.highscore[i] = m_players[i].highscore;
+		else
+			highscore.highscore[i] = -1;
+	}
 }
 
 void PlayerManager::reset()

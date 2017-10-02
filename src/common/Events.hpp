@@ -35,7 +35,8 @@ enum class EventType : uint32_t
 	Message           = (uint32_t)raz::hash("Message"),
 	AddGameObject     = (uint32_t)raz::hash("AddGameObject"),
 	RemoveGameObject  = (uint32_t)raz::hash("RemoveGameObject"),
-	GameObjectSync    = (uint32_t)raz::hash("GameObjectSync")
+	GameObjectSync    = (uint32_t)raz::hash("GameObjectSync"),
+	Highscore         = (uint32_t)raz::hash("Highscore")
 };
 
 enum class EventSource
@@ -201,5 +202,17 @@ struct GameObjectSync : public Event<EventType::GameObjectSync>
 
 		for (uint32_t i = 0; i < object_count; ++i)
 			serializer(object_states[i]);
+	}
+};
+
+struct Highscore : public Event<EventType::Highscore>
+{
+	int32_t highscore[MAX_PLAYERS];
+
+	template<class Serializer>
+	void operator()(Serializer& serializer)
+	{
+		for (int i = 0; i < MAX_PLAYERS; ++i)
+			serializer(highscore[i]);
 	}
 };
