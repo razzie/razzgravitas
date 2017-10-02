@@ -24,7 +24,7 @@ PlayerManager::PlayerManager() :
 {
 	raz::ColorTable color_table;
 
-	for (uint16_t i = 0; i < MAX_PLAYERS + 1; ++i)
+	for (uint16_t i = 0; i < MAX_PLAYERS; ++i)
 	{
 		m_players[i].player_id = i;
 
@@ -76,7 +76,7 @@ const Player* PlayerManager::addLocalPlayer(uint16_t player_id)
 	std::lock_guard<std::mutex> guard(m_mutex);
 
 	if (m_local_player
-		|| player_id > MAX_PLAYERS
+		|| player_id >= MAX_PLAYERS
 		|| m_player_slots.isset(player_id))
 	{
 		return nullptr;
@@ -94,7 +94,7 @@ const Player* PlayerManager::getPlayer(uint16_t player_id) const
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
 
-	if (player_id > MAX_PLAYERS || !m_player_slots.isset(player_id))
+	if (player_id >= MAX_PLAYERS || !m_player_slots.isset(player_id))
 		return nullptr;
 	else
 		return &m_players[player_id];
@@ -122,7 +122,7 @@ bool PlayerManager::switchPlayer(uint16_t player_id, uint16_t new_player_id)
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
 
-	if (player_id > MAX_PLAYERS || new_player_id > MAX_PLAYERS)
+	if (player_id >= MAX_PLAYERS || new_player_id >= MAX_PLAYERS)
 		return false;
 
 	if (!m_player_slots.isset(player_id) || m_player_slots.isset(new_player_id))
@@ -147,7 +147,7 @@ void PlayerManager::removePlayer(uint16_t player_id)
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
 
-	if (player_id > MAX_PLAYERS)
+	if (player_id >= MAX_PLAYERS)
 		return;
 
 	m_player_slots.unset(player_id);
@@ -159,7 +159,7 @@ void PlayerManager::removePlayer(uint16_t player_id)
 
 sf::Color PlayerManager::getPlayerColor(uint16_t player_id)
 {
-	if (player_id > MAX_PLAYERS)
+	if (player_id >= MAX_PLAYERS)
 		return sf::Color::Black;
 	else
 		return m_players[player_id].color;
@@ -172,7 +172,7 @@ void PlayerManager::reset()
 	m_player_slots.reset();
 	m_local_player = nullptr;
 
-	for (uint16_t i = 0; i < MAX_PLAYERS + 1; ++i)
+	for (uint16_t i = 0; i < MAX_PLAYERS; ++i)
 	{
 		Player* player = &m_players[i];
 		player->last_updated = std::chrono::time_point<std::chrono::steady_clock>();
