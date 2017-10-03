@@ -23,10 +23,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <raz/timer.hpp>
 #include "common/IApplication.hpp"
 
+class GameFont;
+
 class GameChat
 {
 public:
-	GameChat(IApplication* app, const Player* player);
+	GameChat(IApplication* app, const Player* player, const GameFont* font);
 	~GameChat();
 	void render(sf::RenderTarget& target);
 	void handle(const sf::Event& e);
@@ -37,8 +39,8 @@ public:
 private:
 	IApplication* m_app;
 	const Player* m_player;
+	const GameFont* m_font;
 	sf::View m_view;
-	sf::Font m_font;
 	raz::Timer m_msg_timer;
 	std::list<sf::Text> m_msg_queue;
 	sf::Text m_input;

@@ -16,30 +16,12 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
-#include "gamewindow/GameFont.hpp"
-#include "gamewindow/GameHighscore.hpp"
+#pragma once
 
-GameHighscore::GameHighscore(const GameFont* font) :
-	m_font(font)
-{
-}
+#include <SFML/Graphics/Font.hpp>
 
-GameHighscore::~GameHighscore()
+class GameFont : public sf::Font
 {
-}
-
-void GameHighscore::render(sf::RenderTarget& target)
-{
-}
-
-void GameHighscore::handle(const sf::Event& e)
-{
-}
-
-void GameHighscore::handle(const Highscore& e)
-{
-}
-
-void GameHighscore::resize(unsigned width, unsigned height)
-{
-}
+public:
+	GameFont();
+};
