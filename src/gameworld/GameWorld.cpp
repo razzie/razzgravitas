@@ -143,7 +143,12 @@ void GameWorld::operator()(AddGameObject e)
 	if (e.radius > MAX_GAME_OBJECT_CREATION_SIZE)
 		e.radius = MAX_GAME_OBJECT_CREATION_SIZE;
 
-	addGameObject(e);
+	GameObject* obj = addGameObject(e);
+	if (obj)
+	{
+		uint32_t cost = getGameObjectValue(obj->radius);
+		m_app->getPlayerManager()->subtractScore(e.player_id, cost);
+	}
 }
 
 void GameWorld::operator()(MergeGameObjects e)
@@ -169,6 +174,9 @@ void GameWorld::operator()(RemoveGameObjectsNearMouse e)
 			if ((obj->player_id == e.player_id || e.player_id == 0)
 				&& (mouse_dist < e.radius || mouse_dist < obj->radius))
 			{
+				uint32_t half_value = getGameObjectValue(obj->radius) / 2;
+				m_app->getPlayerManager()->addScore(obj->player_id, half_value);
+
 				RemoveGameObject _e;
 				_e.player_id = obj->player_id;
 				_e.object_id = obj->object_id;
@@ -509,6 +517,9 @@ void GameWorld::removeExpiredGameObjects()
 		{
 			if (!ignore_expiry && obj->expiry < now)
 			{
+				uint32_t value = getGameObjectValue(obj->radius);
+				m_app->getPlayerManager()->addScore(obj->player_id, value);
+
 				removeGameObject(obj->player_id, obj->object_id);
 			}
 		}

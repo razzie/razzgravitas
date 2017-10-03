@@ -18,15 +18,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
+#include <vector>
 #include <SFML/Graphics.hpp>
-#include "common/Events.hpp"
+#include "common/IApplication.hpp"
 
 class GameFont;
 
 class GameHighscore
 {
 public:
-	GameHighscore(const GameFont* font);
+	GameHighscore(IApplication* app, const GameFont* font);
 	~GameHighscore();
 	void render(sf::RenderTarget& target);
 	void handle(const sf::Event& e);
@@ -34,6 +35,15 @@ public:
 	void resize(unsigned width, unsigned height);
 
 private:
-	const GameFont* m_font;
+	struct Score
+	{
+		uint32_t score;
+		sf::Text text;
+	};
 
+	IApplication* m_app;
+	const GameFont* m_font;
+	std::vector<Score> m_highscore;
+	unsigned m_width;
+	unsigned m_height;
 };
