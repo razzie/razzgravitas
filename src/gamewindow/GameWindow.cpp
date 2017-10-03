@@ -28,7 +28,7 @@ GameWindow::GameWindow(IApplication* app, const Player* player) :
 	m_player(player),
 	m_canvas(app, player),
 	m_chat(app, player, &m_font),
-	m_highscore(&m_font)
+	m_highscore(app, &m_font)
 {
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = ANTIALIASING_LEVEL;
@@ -47,6 +47,7 @@ GameWindow::GameWindow(IApplication* app, const Player* player) :
 
 	m_canvas.resize(m_last_size.x, m_last_size.y);
 	m_chat.resize(m_last_size.x, m_last_size.y);
+	m_highscore.resize(m_last_size.x, m_last_size.y);
 	updateTitle();
 }
 
@@ -82,6 +83,7 @@ void GameWindow::operator()()
 
 	m_canvas.render(m_window);
 	m_chat.render(m_window);
+	m_highscore.render(m_window);
 	m_window.display();
 }
 
