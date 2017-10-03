@@ -48,6 +48,7 @@ public:
 private:
 	IApplication* m_app;
 	raz::Timer m_timer;
+	raz::Timer m_highscore_timer;
 	float m_step_time;
 	b2World m_world;
 	GameObject* m_obj_db[MAX_PLAYERS][MAX_GAME_OBJECTS_PER_PLAYER];

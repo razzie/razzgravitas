@@ -41,7 +41,7 @@ private:
 	raz::NetworkInitializer m_init;
 	IApplication* m_app;
 	raz::NetworkClientUDP<MAX_PACKET_SIZE> m_client;
-	raz::Timer m_timer;
+	raz::Timer m_timeout;
 
 	bool handlePacket(Packet& packet);
 

@@ -63,7 +63,7 @@ NetworkClient::~NetworkClient()
 
 void NetworkClient::operator()()
 {
-	if (m_timer.peekElapsed() > CONNECTION_TIMEOUT)
+	if (m_timeout.peekElapsed() > CONNECTION_TIMEOUT)
 	{
 		if (m_app->getPlayerManager()->getLocalPlayer())
 			m_app->exit(-1, "Connection timed out");
@@ -95,7 +95,7 @@ void NetworkClient::operator()()
 
 	packet.setMode(raz::SerializationMode::DESERIALIZE);
 	if (handlePacket(packet))
-		m_timer.reset();
+		m_timeout.reset();
 }
 
 void NetworkClient::operator()(Message e)
@@ -149,5 +149,6 @@ bool NetworkClient::handlePacket(Packet& packet)
 		|| tryHandle<Disconnected>(packet)
 		|| tryHandle<SwitchPlayer>(packet)
 		|| tryHandle<Message>(packet)
-		|| tryHandle<GameObjectSync>(packet));
+		|| tryHandle<GameObjectSync>(packet)
+		|| tryHandle<Highscore>(packet));
 }

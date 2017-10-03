@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include "common/IApplication.hpp"
 #include "gamewindow/GameCanvas.hpp"
 #include "gamewindow/GameChat.hpp"
+#include "gamewindow/GameHighscore.hpp"
 
 class GameWindow
 {
@@ -35,6 +36,7 @@ public:
 	void operator()(GameObjectSync e);
 	void operator()(Message e);
 	void operator()(SwitchPlayer e);
+	void operator()(Highscore e);
 
 private:
 	static sf::Vector2u m_last_size;
@@ -45,6 +47,7 @@ private:
 	sf::RenderWindow m_window;
 	GameCanvas m_canvas;
 	GameChat m_chat;
+	GameHighscore m_highscore;
 
 	void updateTitle();
 };
