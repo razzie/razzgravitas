@@ -186,6 +186,9 @@
     <ClCompile Include="src\gamewindow\GameHighscore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\gamewindow\GameFont.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\thirdparty\Box2D\Collision\Shapes\b2ChainShape.h">
@@ -597,6 +600,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\gamewindow\GameHighscore.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gamewindow\GameFont.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

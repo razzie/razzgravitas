@@ -18,18 +18,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #include <ShlObj.h>
 #include "common/PlayerManager.hpp"
+#include "gamewindow/GameFont.hpp"
 #include "gamewindow/GameChat.hpp"
 
-GameChat::GameChat(IApplication* app, const Player* player) :
+GameChat::GameChat(IApplication* app, const Player* player, const GameFont* font) :
 	m_app(app),
-	m_player(player)
+	m_player(player),
+	m_font(font)
 {
-	PWSTR font_filename;
-	SHGetKnownFolderPath(FOLDERID_Fonts, 0, NULL, &font_filename);
-	m_font.loadFromFile(sf::String(font_filename) + "/arial.ttf");
-	CoTaskMemFree(font_filename);
-
-	m_input.setFont(m_font);
+	m_input.setFont(*m_font);
 	m_input.setOutlineColor(sf::Color::White);
 	m_input.setOutlineThickness(0.1f);
 	m_input.setCharacterSize(MESSAGE_CHAR_SIZE);
@@ -127,7 +124,7 @@ void GameChat::handle(const sf::Event& e)
 void GameChat::handle(const Message& e)
 {
 	sf::Text msg;
-	msg.setFont(m_font);
+	msg.setFont(*m_font);
 	msg.setFillColor(m_app->getPlayerManager()->getPlayerColor(e.player_id));
 	msg.setOutlineColor(sf::Color::White);
 	msg.setOutlineThickness(0.1f);

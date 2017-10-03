@@ -27,7 +27,8 @@ GameWindow::GameWindow(IApplication* app, const Player* player) :
 	m_app(app),
 	m_player(player),
 	m_canvas(app, player),
-	m_chat(app, player)
+	m_chat(app, player, &m_font),
+	m_highscore(&m_font)
 {
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = ANTIALIASING_LEVEL;

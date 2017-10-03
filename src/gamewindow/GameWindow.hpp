@@ -23,6 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <SFML/Graphics.hpp>
 #include <raz/timer.hpp>
 #include "common/IApplication.hpp"
+#include "gamewindow/GameFont.hpp"
 #include "gamewindow/GameCanvas.hpp"
 #include "gamewindow/GameChat.hpp"
 #include "gamewindow/GameHighscore.hpp"
@@ -45,6 +46,7 @@ private:
 	IApplication* m_app;
 	const Player* m_player;
 	sf::RenderWindow m_window;
+	GameFont m_font;
 	GameCanvas m_canvas;
 	GameChat m_chat;
 	GameHighscore m_highscore;

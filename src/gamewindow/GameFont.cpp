@@ -16,30 +16,13 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
+#include <ShlObj.h>
 #include "gamewindow/GameFont.hpp"
-#include "gamewindow/GameHighscore.hpp"
 
-GameHighscore::GameHighscore(const GameFont* font) :
-	m_font(font)
+GameFont::GameFont()
 {
-}
-
-GameHighscore::~GameHighscore()
-{
-}
-
-void GameHighscore::render(sf::RenderTarget& target)
-{
-}
-
-void GameHighscore::handle(const sf::Event& e)
-{
-}
-
-void GameHighscore::handle(const Highscore& e)
-{
-}
-
-void GameHighscore::resize(unsigned width, unsigned height)
-{
+	PWSTR font_filename;
+	SHGetKnownFolderPath(FOLDERID_Fonts, 0, NULL, &font_filename);
+	loadFromFile(sf::String(font_filename) + "/arial.ttf");
+	CoTaskMemFree(font_filename);
 }
