@@ -340,3 +340,13 @@ void Application::handle(const GameObjectSyncRequest& e, EventSource src)
 		m_world(e);
 	}
 }
+
+void Application::handle(const Highscore& e, EventSource src)
+{
+	m_window(e);
+
+	if (m_mode == GameMode::Host)
+	{
+		m_network_server(e);
+	}
+}

@@ -19,6 +19,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 #include <cstring>
 #include <cmath>
 #include <stdexcept>
+#include "common/PlayerManager.hpp"
 #include "gameworld/GameWorld.hpp"
 
 static constexpr double PI = 3.14159265358979323846;
@@ -28,6 +29,13 @@ static std::chrono::milliseconds getGameObjectDuration(float radius)
 	float t = 1.f - ((radius - MIN_GAME_OBJECT_SIZE) / (MAX_GAME_OBJECT_SIZE - MIN_GAME_OBJECT_SIZE));
 	std::chrono::milliseconds::rep ms = (std::chrono::milliseconds::rep)(1000 * (t * (MAX_GAME_OBJECT_DURATION - MIN_GAME_OBJECT_DURATION) + MIN_GAME_OBJECT_DURATION));
 	return std::chrono::milliseconds(ms);
+}
+
+static uint32_t getGameObjectValue(float radius)
+{
+	float t = (radius - MIN_GAME_OBJECT_SIZE) / (MAX_GAME_OBJECT_SIZE - MIN_GAME_OBJECT_SIZE);
+	uint32_t value = (uint32_t)((t * (MAX_GAME_OBJECT_VALUE - MIN_GAME_OBJECT_VALUE) + MIN_GAME_OBJECT_VALUE));
+	return value;
 }
 
 GameWorld::GameWorld(IApplication* app) :
@@ -90,6 +98,15 @@ void GameWorld::operator()()
 		}
 
 		m_world.Step(WORLD_STEP, 8, 3);
+	}
+
+	if (m_app->getGameMode() != GameMode::SingplePlay
+		&& m_highscore_timer.peekElapsed() > HIGHSCORE_SYNC_RATE)
+	{
+		Highscore e;
+		m_app->getPlayerManager()->getHighscore(e);
+		m_app->handle(e, EventSource::GameWorld);
+		m_highscore_timer.reset();
 	}
 
 	// render

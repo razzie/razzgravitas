@@ -70,14 +70,18 @@ void NetworkServer::operator()()
 			break;
 		}
 
-		if (m_timer.peekElapsed() > GAME_SYNC_RATE)
+		if (m_timeout.peekElapsed() > CONNECTION_TIMEOUT)
 		{
-			m_timer.reset();
 			handleClientTimeouts(); // dont really need to run it in every cycle
+			m_timeout.reset();
+		}
 
+		if (m_sync_timer.peekElapsed() > GAME_SYNC_RATE)
+		{
 			GameObjectSyncRequest e;
 			e.sync_id = (uint32_t)m_sync_id_gen();
 			m_app->handle(e, EventSource::Network);
+			m_sync_timer.reset();
 		}
 	}
 	catch (raz::NetworkSocketError&)
@@ -126,6 +130,19 @@ void NetworkServer::operator()(SwitchPlayer e)
 		packet(e);
 
 		m_server.send(*client, packet);
+	}
+}
+
+void NetworkServer::operator()(Highscore e)
+{
+	Packet packet;
+	packet.setType((raz::PacketType)EventType::Highscore);
+	packet.setMode(raz::SerializationMode::SERIALIZE);
+	packet(e);
+
+	for (auto& client : m_clients)
+	{
+		m_server.send(client, packet);
 	}
 }
 

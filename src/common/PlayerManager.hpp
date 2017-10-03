@@ -32,8 +32,8 @@ struct Player
 {
 	uint16_t player_id;
 	sf::Color color;
+	uint32_t highscore;
 	mutable std::chrono::steady_clock::time_point last_updated;
-	mutable uint32_t highscore;
 	mutable const void* data;
 };
 
@@ -52,6 +52,8 @@ public:
 	void removePlayer(uint16_t player_id);
 	sf::Color getPlayerColor(uint16_t player_id);
 	void getHighscore(Highscore& highscore) const;
+	void addScore(uint16_t player_id, uint32_t score);
+	void subtractScore(uint16_t player_id, uint32_t score);
 
 protected:
 	friend class Application;

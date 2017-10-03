@@ -91,6 +91,7 @@
     <ClCompile Include="src\common\Application.cpp" />
     <ClCompile Include="src\gamewindow\GameCanvas.cpp" />
     <ClCompile Include="src\gamewindow\GameChat.cpp" />
+    <ClCompile Include="src\gamewindow\GameHighscore.cpp" />
     <ClCompile Include="src\gameworld\GameObject.cpp" />
     <ClCompile Include="src\gamewindow\GameWindow.cpp" />
     <ClCompile Include="src\gameworld\GameWorld.cpp" />
@@ -151,6 +152,7 @@
     <ClInclude Include="src\common\GameObjectState.hpp" />
     <ClInclude Include="src\gamewindow\GameCanvas.hpp" />
     <ClInclude Include="src\gamewindow\GameChat.hpp" />
+    <ClInclude Include="src\gamewindow\GameHighscore.hpp" />
     <ClInclude Include="src\gameworld\GameObject.hpp" />
     <ClInclude Include="src\gamewindow\GameWindow.hpp" />
     <ClInclude Include="src\gameworld\GameWorld.hpp" />

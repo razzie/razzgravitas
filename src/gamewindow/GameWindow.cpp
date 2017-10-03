@@ -76,6 +76,7 @@ void GameWindow::operator()()
 
 		m_canvas.handle(event);
 		m_chat.handle(event);
+		m_highscore.handle(event);
 	}
 
 	m_canvas.render(m_window);
@@ -99,6 +100,11 @@ void GameWindow::operator()(SwitchPlayer e)
 	m_canvas.handle(e);
 	m_chat.handle(e);
 	updateTitle();
+}
+
+void GameWindow::operator()(Highscore e)
+{
+	m_highscore.handle(e);
 }
 
 void GameWindow::updateTitle()

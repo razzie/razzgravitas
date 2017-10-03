@@ -34,6 +34,7 @@ public:
 	void operator()(Message e);
 	void operator()(GameObjectSync e);
 	void operator()(SwitchPlayer e);
+	void operator()(Highscore e);
 	void operator()(std::exception& e);
 
 private:
@@ -53,7 +54,8 @@ private:
 	raz::NetworkInitializer m_init;
 	IApplication* m_app;
 	raz::NetworkServerUDP<MAX_PACKET_SIZE> m_server;
-	raz::Timer m_timer;
+	raz::Timer m_timeout;
+	raz::Timer m_sync_timer;
 	raz::Random m_sync_id_gen;
 	Data m_data;
 	std::set<Client, ClientComparator> m_clients;

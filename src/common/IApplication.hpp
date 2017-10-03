@@ -49,4 +49,5 @@ public:
 	virtual void handle(const RemovePlayerGameObjects& e, EventSource src) = 0;
 	virtual void handle(const GameObjectSync& e, EventSource src) = 0;
 	virtual void handle(const GameObjectSyncRequest& e, EventSource src) = 0;
+	virtual void handle(const Highscore& e, EventSource src) = 0;
 };

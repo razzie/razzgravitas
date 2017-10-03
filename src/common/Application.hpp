@@ -48,6 +48,7 @@ public:
 	virtual void handle(const RemovePlayerGameObjects& e, EventSource src);
 	virtual void handle(const GameObjectSync& e, EventSource src);
 	virtual void handle(const GameObjectSyncRequest& e, EventSource src);
+	virtual void handle(const Highscore& e, EventSource src);
 
 private:
 	struct ExitInfo

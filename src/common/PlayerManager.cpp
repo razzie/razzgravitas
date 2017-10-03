@@ -131,8 +131,8 @@ bool PlayerManager::switchPlayer(uint16_t player_id, uint16_t new_player_id)
 
 	m_player_slots.set(new_player_id);
 	m_player_slots.unset(player_id);
-	std::swap(m_players[player_id].last_updated, m_players[new_player_id].last_updated);
 	std::swap(m_players[player_id].highscore, m_players[new_player_id].highscore);
+	std::swap(m_players[player_id].last_updated, m_players[new_player_id].last_updated);
 	std::swap(m_players[player_id].data, m_players[new_player_id].data);
 
 	if (m_local_player && m_local_player->player_id == player_id)
@@ -153,8 +153,8 @@ void PlayerManager::removePlayer(uint16_t player_id)
 
 	m_player_slots.unset(player_id);
 	Player* player = &m_players[player_id];
-	player->last_updated = std::chrono::time_point<std::chrono::steady_clock>();
 	player->highscore = 0;
+	player->last_updated = std::chrono::time_point<std::chrono::steady_clock>();
 	player->data = nullptr;
 }
 
@@ -179,6 +179,29 @@ void PlayerManager::getHighscore(Highscore& highscore) const
 	}
 }
 
+void PlayerManager::addScore(uint16_t player_id, uint32_t score)
+{
+	std::lock_guard<std::mutex> guard(m_mutex);
+
+	if (player_id >= MAX_PLAYERS || !m_player_slots.isset(player_id))
+		return;
+
+	m_players[player_id].highscore += score;
+}
+
+void PlayerManager::subtractScore(uint16_t player_id, uint32_t score)
+{
+	std::lock_guard<std::mutex> guard(m_mutex);
+
+	if (player_id >= MAX_PLAYERS || !m_player_slots.isset(player_id))
+		return;
+
+	if (score >= m_players[player_id].highscore)
+		m_players[player_id].highscore = 0;
+	else
+		m_players[player_id].highscore -= score;
+}
+
 void PlayerManager::reset()
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
@@ -189,8 +212,8 @@ void PlayerManager::reset()
 	for (uint16_t i = 0; i < MAX_PLAYERS; ++i)
 	{
 		Player* player = &m_players[i];
-		player->last_updated = std::chrono::time_point<std::chrono::steady_clock>();
 		player->highscore = 0;
+		player->last_updated = std::chrono::time_point<std::chrono::steady_clock>();
 		player->data = nullptr;
 	}
 
