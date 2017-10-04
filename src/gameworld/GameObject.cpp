@@ -44,6 +44,7 @@ void GameObject::apply(const GameObjectState& state)
 
 void GameObject::remove()
 {
+	value = 0;
 	expiry = std::chrono::time_point<std::chrono::steady_clock>();
 }
 

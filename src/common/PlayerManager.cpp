@@ -189,17 +189,18 @@ void PlayerManager::addScore(uint16_t player_id, uint32_t score)
 	m_players[player_id].highscore += score;
 }
 
-void PlayerManager::subtractScore(uint16_t player_id, uint32_t score)
+uint32_t PlayerManager::subtractScore(uint16_t player_id, uint32_t score)
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
 
 	if (player_id >= MAX_PLAYERS || !m_player_slots.isset(player_id))
-		return;
+		return 0;
 
-	if (score >= m_players[player_id].highscore)
-		m_players[player_id].highscore = 0;
-	else
-		m_players[player_id].highscore -= score;
+	if (score > m_players[player_id].highscore)
+		score = m_players[player_id].highscore;
+
+	m_players[player_id].highscore -= score;
+	return score;
 }
 
 void PlayerManager::reset()

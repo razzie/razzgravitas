@@ -100,7 +100,7 @@ void GameWorld::operator()()
 		m_world.Step(WORLD_STEP, 8, 3);
 	}
 
-	if (m_app->getGameMode() != GameMode::SingplePlay
+	if (m_app->getGameMode() == GameMode::Host
 		&& m_highscore_timer.peekElapsed() > HIGHSCORE_SYNC_RATE)
 	{
 		Highscore e;
@@ -147,7 +147,8 @@ void GameWorld::operator()(AddGameObject e)
 	if (obj)
 	{
 		uint32_t cost = getGameObjectValue(obj->radius);
-		m_app->getPlayerManager()->subtractScore(e.player_id, cost);
+		cost = m_app->getPlayerManager()->subtractScore(e.player_id, cost);
+		obj->value = cost;
 	}
 }
 
@@ -174,8 +175,7 @@ void GameWorld::operator()(RemoveGameObjectsNearMouse e)
 			if ((obj->player_id == e.player_id || e.player_id == 0)
 				&& (mouse_dist < e.radius || mouse_dist < obj->radius))
 			{
-				uint32_t half_value = getGameObjectValue(obj->radius) / 2;
-				m_app->getPlayerManager()->addScore(obj->player_id, half_value);
+				m_app->getPlayerManager()->addScore(obj->player_id, obj->value / 2);
 
 				RemoveGameObject _e;
 				_e.player_id = obj->player_id;
@@ -389,6 +389,7 @@ GameObject* GameWorld::addGameObject(const AddGameObject& e, uint16_t object_id,
 	obj->object_id = object_id;
 	obj->radius = radius;
 	obj->last_sync_id = sync_id;
+	obj->value = 0;
 	obj->root_position_x = e.position_x;
 	obj->root_position_y = e.position_y;
 	obj->creation = std::chrono::steady_clock::now();
@@ -455,6 +456,8 @@ void GameWorld::mergeGameObjects(GameObject* obj1, GameObject* obj2)
 			player_id = obj2->player_id;
 	}
 
+	uint32_t value = (obj1->value || obj2->value || (obj1->player_id != obj2->player_id)) ? getGameObjectValue(radius) : 0;
+
 	AddGameObject e;
 	e.player_id = player_id;
 	e.radius = radius;
@@ -463,11 +466,14 @@ void GameWorld::mergeGameObjects(GameObject* obj1, GameObject* obj2)
 	e.velocity_x = (velocity1.x * mass1 + velocity2.x * mass2) * mass_fract;
 	e.velocity_y = (velocity1.y * mass1 + velocity2.y * mass2) * mass_fract;
 
-	if (GameObject* new_obj = addGameObject(e))
+	GameObject* new_obj = addGameObject(e);
+	if (new_obj)
 	{
 		obj1->remove();
 		obj2->remove();
-		new_obj->creation = std::chrono::steady_clock::now() + std::chrono::milliseconds(GAME_SYNC_RATE * 2);
+
+		new_obj->creation += std::chrono::milliseconds(GAME_SYNC_RATE * 2);
+		new_obj->value = value;
 	}
 }
 
@@ -517,9 +523,7 @@ void GameWorld::removeExpiredGameObjects()
 		{
 			if (!ignore_expiry && obj->expiry < now)
 			{
-				uint32_t value = getGameObjectValue(obj->radius);
-				m_app->getPlayerManager()->addScore(obj->player_id, value);
-
+				m_app->getPlayerManager()->addScore(obj->player_id, obj->value);
 				removeGameObject(obj->player_id, obj->object_id);
 			}
 		}

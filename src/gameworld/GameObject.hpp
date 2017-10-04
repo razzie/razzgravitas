@@ -31,6 +31,7 @@ struct GameObject
 	float radius;
 	b2Body* body;
 	uint32_t last_sync_id;
+	uint32_t value;
 	float root_position_x;
 	float root_position_y;
 	std::chrono::steady_clock::time_point creation;
