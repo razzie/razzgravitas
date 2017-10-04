@@ -53,7 +53,7 @@ public:
 	sf::Color getPlayerColor(uint16_t player_id);
 	void getHighscore(Highscore& highscore) const;
 	void addScore(uint16_t player_id, uint32_t score);
-	void subtractScore(uint16_t player_id, uint32_t score);
+	uint32_t subtractScore(uint16_t player_id, uint32_t score);
 
 protected:
 	friend class Application;

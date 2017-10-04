@@ -23,9 +23,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 GameHighscore::GameHighscore(IApplication* app, const GameFont* font) :
 	m_app(app),
 	m_font(font),
-	m_width(0),
-	m_height(0)
+	m_width(0.f)
 {
+	m_sample_score.setFont(*m_font);
+	m_sample_score.setOutlineColor(sf::Color::White);
+	m_sample_score.setOutlineThickness(0.1f);
+	m_sample_score.setCharacterSize(MESSAGE_CHAR_SIZE);
 }
 
 GameHighscore::~GameHighscore()
@@ -34,6 +37,14 @@ GameHighscore::~GameHighscore()
 
 void GameHighscore::render(sf::RenderTarget& target)
 {
+	float y_pos = 10.f;
+
+	for (Score& score : m_highscore)
+	{
+		score.text.setPosition(m_width - score.text.getLocalBounds().width - 10.f, y_pos);
+		target.draw(score.text);
+		y_pos += MESSAGE_CHAR_SIZE + 2;
+	}
 }
 
 void GameHighscore::handle(const sf::Event& e)
@@ -55,20 +66,32 @@ void GameHighscore::handle(const Highscore& e)
 		if (e.highscore[i] < 0)
 			continue;
 
-		// TODO: ordering!
-
 		Score score;
 		score.score = e.highscore[i];
-		score.text.setFont(*m_font);
+		score.text = m_sample_score;
 		score.text.setString(std::to_string(score.score));
 		score.text.setFillColor(m_app->getPlayerManager()->getPlayerColor(i));
 
-		m_highscore.push_back(std::move(score));
+		bool inserted = false;
+
+		for (auto it = m_highscore.begin(), end = m_highscore.end(); it != end; ++it)
+		{
+			if (score.score > it->score)
+			{
+				inserted = true;
+				m_highscore.insert(it, std::move(score));
+				break;
+			}
+		}
+
+		if (!inserted)
+		{
+			m_highscore.push_back(std::move(score));
+		}
 	}
 }
 
 void GameHighscore::resize(unsigned width, unsigned height)
 {
-	m_width = width;
-	m_height = height;
+	m_width = (float)width;
 }

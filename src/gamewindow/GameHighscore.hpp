@@ -18,7 +18,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 #pragma once
 
-#include <vector>
+#include <list>
 #include <SFML/Graphics.hpp>
 #include "common/IApplication.hpp"
 
@@ -43,7 +43,7 @@ private:
 
 	IApplication* m_app;
 	const GameFont* m_font;
-	std::vector<Score> m_highscore;
-	unsigned m_width;
-	unsigned m_height;
+	sf::Text m_sample_score;
+	std::list<Score> m_highscore;
+	float m_width;
 };
