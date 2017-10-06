@@ -17,6 +17,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 */
 
 #include <Box2D/Box2D.h>
+#include "common/Config.hpp"
 #include "common/GameObjectState.hpp"
 #include "gameworld/GameObject.hpp"
 
@@ -29,6 +30,12 @@ void GameObject::fill(GameObjectState& state) const
 	state.radius = radius;
 	state.velocity_x = body->GetLinearVelocity().x;
 	state.velocity_y = body->GetLinearVelocity().y;
+
+	if (player_id == 0 && creation > std::chrono::steady_clock::now() - std::chrono::milliseconds(GAME_SYNC_RATE))
+	{
+		state.position_x = root_position_x;
+		state.position_y = root_position_y;
+	}
 }
 
 void GameObject::apply(const GameObjectState& state)
