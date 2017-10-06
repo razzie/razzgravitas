@@ -41,14 +41,3 @@ void GameObject::apply(const GameObjectState& state)
 
 	body->SetLinearVelocity(velocity);
 }
-
-void GameObject::remove()
-{
-	value = 0;
-	expiry = std::chrono::time_point<std::chrono::steady_clock>();
-}
-
-bool GameObject::isExpired() const
-{
-	return (std::chrono::steady_clock::now() > expiry);
-}

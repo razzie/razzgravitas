@@ -297,7 +297,7 @@ void GameWorld::BeginContact(b2Contact* contact)
 	GameObject* obj1 = reinterpret_cast<GameObject*>(body1->GetUserData());
 	GameObject* obj2 = reinterpret_cast<GameObject*>(body2->GetUserData());
 
-	if (!obj1 || !obj2 || obj1->isExpired() || obj2->isExpired())
+	if (!obj1 || !obj2)
 		return;
 
 	b2Vec2 dir1 = body1->GetLinearVelocity(); dir1.Normalize();
@@ -466,11 +466,23 @@ void GameWorld::mergeGameObjects(GameObject* obj1, GameObject* obj2)
 	e.velocity_x = (velocity1.x * mass1 + velocity2.x * mass2) * mass_fract;
 	e.velocity_y = (velocity1.y * mass1 + velocity2.y * mass2) * mass_fract;
 
+	bool objects_removed = false;
+
+	if (obj1->player_id == player_id || obj2->player_id == player_id)
+	{
+		removeGameObject(obj1->player_id, obj1->object_id);
+		removeGameObject(obj2->player_id, obj2->object_id);
+		objects_removed = true;
+	}
+
 	GameObject* new_obj = addGameObject(e);
 	if (new_obj)
 	{
-		obj1->remove();
-		obj2->remove();
+		if (!objects_removed)
+		{
+			removeGameObject(obj1->player_id, obj1->object_id);
+			removeGameObject(obj2->player_id, obj2->object_id);
+		}
 
 		new_obj->creation += std::chrono::milliseconds(GAME_SYNC_RATE * 2);
 		new_obj->value = value;

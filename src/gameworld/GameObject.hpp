@@ -39,6 +39,4 @@ struct GameObject
 
 	void fill(GameObjectState& state) const;
 	void apply(const GameObjectState& state);
-	void remove();
-	bool isExpired() const;
 };
