@@ -446,17 +446,25 @@ void GameWorld::mergeGameObjects(GameObject* obj1, GameObject* obj2)
 		return;
 
 	float mass_fract = 1.f / (mass1 + mass2);
-	uint16_t player_id = (obj1->player_id == obj2->player_id) ? obj1->player_id : 0;
+	uint16_t player_id = 0;
+	uint32_t value = obj1->value + obj2->value + GAME_OBJECT_MERGE_SCORE_BONUS;
 
-	if (player_id == 0)
+	if (obj1->player_id != obj2->player_id)
 	{
-		if (obj1->radius >= obj2->radius * 2.f)
+		// obj1 eats obj2
+		if (obj1->radius >= obj2->radius * GAME_OBJECT_MERGE_SCALE_THRESHOLD)
 			player_id = obj1->player_id;
-		else if (obj2->radius >= obj1->radius * 2.f)
+		// obj2 eats obj2
+		else if (obj2->radius >= obj1->radius * GAME_OBJECT_MERGE_SCALE_THRESHOLD)
 			player_id = obj2->player_id;
+		// two non-black objects turn into black
+		else if (obj1->player_id != 0 && obj2->player_id != 0)
+			m_app->getPlayerManager()->subtractScore(0, value);
 	}
-
-	uint32_t value = (obj1->value || obj2->value || (obj1->player_id != obj2->player_id)) ? getGameObjectValue(radius) : 0;
+	else
+	{
+		player_id = obj1->player_id;
+	}
 
 	AddGameObject e;
 	e.player_id = player_id;
@@ -492,7 +500,7 @@ void GameWorld::mergeGameObjects(GameObject* obj1, GameObject* obj2)
 void GameWorld::removeGameObject(uint16_t player_id, uint16_t object_id)
 {
 	if (player_id >= MAX_PLAYERS || object_id >= MAX_GAME_OBJECTS_PER_PLAYER)
-		throw std::runtime_error("ID error");
+		return;
 
 	GameObject* obj = m_obj_db[player_id][object_id];
 	if (!obj)
@@ -535,7 +543,7 @@ void GameWorld::removeExpiredGameObjects()
 		{
 			if (!ignore_expiry && obj->expiry < now)
 			{
-				m_app->getPlayerManager()->addScore(obj->player_id, obj->value);
+				m_app->getPlayerManager()->addScore(obj->player_id, obj->value + GAME_OBJECT_EXPIRATION_BONUS);
 				removeGameObject(obj->player_id, obj->object_id);
 			}
 		}
@@ -547,7 +555,7 @@ void GameWorld::removeExpiredGameObjects()
 void GameWorld::sync(GameObjectState& state, uint32_t sync_id)
 {
 	if (state.player_id >= MAX_PLAYERS || state.object_id >= MAX_GAME_OBJECTS_PER_PLAYER)
-		throw std::runtime_error("Sync ID error");
+		return;
 
 	GameObject* obj = m_obj_db[state.player_id][state.object_id];
 	if (obj)
