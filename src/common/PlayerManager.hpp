@@ -51,6 +51,7 @@ public:
 	bool switchPlayer(uint16_t player_id, uint16_t new_player_id);
 	void removePlayer(uint16_t player_id);
 	sf::Color getPlayerColor(uint16_t player_id);
+	size_t getPlayerCount() const;
 	void getHighscore(Highscore& highscore) const;
 	void addScore(uint16_t player_id, uint32_t score);
 	uint32_t subtractScore(uint16_t player_id, uint32_t score);

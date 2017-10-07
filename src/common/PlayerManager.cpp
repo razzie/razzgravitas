@@ -166,6 +166,13 @@ sf::Color PlayerManager::getPlayerColor(uint16_t player_id)
 		return m_players[player_id].color;
 }
 
+size_t PlayerManager::getPlayerCount() const
+{
+	std::lock_guard<std::mutex> guard(m_mutex);
+
+	return m_player_slots.truebits().count();
+}
+
 void PlayerManager::getHighscore(Highscore& highscore) const
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
