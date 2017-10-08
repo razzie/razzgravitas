@@ -54,7 +54,7 @@ private:
 	GameObject* m_obj_db[MAX_PLAYERS][MAX_GAME_OBJECTS_PER_PLAYER];
 	raz::Bitset<MAX_GAME_OBJECTS_PER_PLAYER> m_obj_slots[MAX_PLAYERS];
 	uint32_t m_last_sync_id;
-	uint32_t m_render_counter;
+	mutable uint32_t m_render_counter;
 
 	void setLevelBounds(float width, float height);
 	bool findNewObjectID(uint16_t player_id, uint16_t& object_id);
@@ -65,4 +65,5 @@ private:
 	void removeUnsyncedGameObjects(uint32_t sync_id);
 	void removeExpiredGameObjects();
 	void sync(GameObjectState& state, uint32_t sync_id);
+	void syncRenderer() const;
 };

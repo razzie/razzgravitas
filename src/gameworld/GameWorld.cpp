@@ -62,8 +62,6 @@ void GameWorld::operator()()
 	float delta = 0.001f * m_timer.getElapsed();
 	for (m_step_time += delta; m_step_time >= WORLD_STEP; m_step_time -= WORLD_STEP)
 	{
-		removeExpiredGameObjects();
-
 		for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
 		{
 			GameObject* obj = static_cast<GameObject*>(body->GetUserData());
@@ -109,33 +107,8 @@ void GameWorld::operator()()
 		m_highscore_timer.reset();
 	}
 
-	// render
-	GameObjectSync render;
-	render.sync_id = ++m_render_counter;
-	render.object_count = 0;
-	render.target = GameObjectSync::Target::GameWindow;
-
-	unsigned render_events = 0;
-
-	for (b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
-	{
-		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
-		if (!obj)
-			continue;
-
-		obj->fill(render.object_states[render.object_count]);
-		++render.object_count;
-
-		if (render.object_count == MAX_GAME_OBJECTS_PER_SYNC)
-		{
-			m_app->handle(render, EventSource::GameWorld);
-			render.object_count = 0;
-			++render_events;
-		}
-	}
-
-	if (render.object_count > 0 || render_events == 0)
-		m_app->handle(render, EventSource::GameWorld);
+	syncRenderer();
+	removeExpiredGameObjects();
 }
 
 void GameWorld::operator()(AddGameObject e)
@@ -447,7 +420,7 @@ void GameWorld::mergeGameObjects(GameObject* obj1, GameObject* obj2)
 
 	float mass_fract = 1.f / (mass1 + mass2);
 	uint16_t player_id = 0;
-	uint32_t value = obj1->value + obj2->value + GAME_OBJECT_MERGE_SCORE_BONUS;
+	uint32_t value = obj1->value + obj2->value + GAME_OBJECT_MERGE_BONUS;
 
 	if (obj1->player_id != obj2->player_id)
 	{
@@ -575,4 +548,34 @@ void GameWorld::sync(GameObjectState& state, uint32_t sync_id)
 
 		addGameObject(e, state.object_id, sync_id);
 	}
+}
+
+void GameWorld::syncRenderer() const
+{
+	GameObjectSync render;
+	render.sync_id = ++m_render_counter;
+	render.object_count = 0;
+	render.target = GameObjectSync::Target::GameWindow;
+
+	unsigned render_events = 0;
+
+	for (const b2Body* body = m_world.GetBodyList(); body != 0; body = body->GetNext())
+	{
+		GameObject* obj = static_cast<GameObject*>(body->GetUserData());
+		if (!obj)
+			continue;
+
+		obj->fill(render.object_states[render.object_count]);
+		++render.object_count;
+
+		if (render.object_count == MAX_GAME_OBJECTS_PER_SYNC)
+		{
+			m_app->handle(render, EventSource::GameWorld);
+			render.object_count = 0;
+			++render_events;
+		}
+	}
+
+	if (render.object_count > 0 || render_events == 0)
+		m_app->handle(render, EventSource::GameWorld);
 }
